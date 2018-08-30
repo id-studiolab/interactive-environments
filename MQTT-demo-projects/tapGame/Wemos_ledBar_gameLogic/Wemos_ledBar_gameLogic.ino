@@ -1,8 +1,8 @@
 #include <ESP8266WiFi.h>
 #include <MQTTClient.h>
 
-const char *ssid = "gino";
-const char *pass = "ginogino";
+const char *ssid = "Martin's iPhone";
+const char *pass = "martinim";
 
 WiFiClient net;
 MQTTClient client;
@@ -23,7 +23,7 @@ void connect(); // <- predefine connect() for setup()
 void setup() {
 
 
-  Serial.begin(9600);
+  //Serial.begin(9600);
   WiFi.begin(ssid, pass);
   client.begin("broker.shiftr.io", net);
   connect();
@@ -37,12 +37,12 @@ void connect() {
   Serial.print("checking wifi...");
   while (WiFi.status() != WL_CONNECTED) {
     Serial.print(".");
-    delay(1000);
+    delay(500);
   }
   Serial.print("\nconnecting...");
   while (!client.connect("d1_tapGame_Master", "a0e78aaf", "2626bb47aaf15e04")) {
     Serial.print(".");
-    delay(1000);
+    delay(500);
   }
 
   Serial.println("\nconnected!");
@@ -56,21 +56,24 @@ void loop() {
     connect();
   }
 
+  delay(10);
+
   client.loop();
-  delay(10); // <- fixes some issues with WiFi stability
+
+ // delay(10); // <- fixes some issues with WiFi stability
 
   // publish a message roughly every second.
-  if (millis() - lastMillis > 1000) {
+  if (millis() - lastMillis > 2000) {
 
     Serial.println("timerCount");
-    if (nRedPixel>10){
-      nRedPixel-=.2;
-    }else if (nRedPixel>10){
-      nRedPixel+=.2;
+    if (nRedPixel > 10) {
+      nRedPixel -= .2;
+    } else if (nRedPixel < 10) {
+      nRedPixel += .2;
     }
     client.publish("/tapGame/redProgress", String(nRedPixel / 20, DEC));
 
-    lastMillis=millis();
+    lastMillis = millis();
 
   }
 
@@ -137,7 +140,7 @@ void blueVictory() {
       }
     }
   }
-    resetGame();
+  resetGame();
 
 }
 
@@ -159,7 +162,7 @@ void redVictory() {
 }
 
 void resetGame() {
-  nRedPixel=10;
+  nRedPixel = 10;
   client.publish("/tapGame/redProgress", String(nRedPixel / 20, DEC));
 }
 
