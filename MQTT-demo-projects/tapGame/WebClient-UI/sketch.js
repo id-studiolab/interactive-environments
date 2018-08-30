@@ -40,9 +40,13 @@ function draw(){
 			textAlign(CENTER, CENTER)
 			text("TAP", 50,50, width-100,height-100);
 
+			break;
 		}
 		case 2:{
  		//todo victory screen
+
+			console.log (winner);
+
 			if (winner=="red"){
 
 				fill('red');
@@ -52,15 +56,15 @@ function draw(){
 				textAlign(CENTER, CENTER)
 				text("RED WON", 50,50, width-100,height-100);
 			}else {
-				fill('red');
+				fill('blue');
 				rect(0,0,width,height);
 				fill('white')
 				textSize(100);
 				textAlign(CENTER, CENTER)
-				text("RED WON", 50,50, width-100,height-100);
+				text("BLUE WON", 50,50, width-100,height-100);
 			}
 
-			setTimeout(resetGame(), 2000);
+			setTimeout(function(){resetGame()}, 2000);
 
 		}
 

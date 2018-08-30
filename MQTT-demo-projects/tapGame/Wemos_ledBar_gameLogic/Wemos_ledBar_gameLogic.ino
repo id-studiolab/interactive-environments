@@ -51,12 +51,13 @@ void connect() {
 }
 
 void loop() {
-  client.loop();
-  delay(10); // <- fixes some issues with WiFi stability
 
   if (!client.connected()) {
     connect();
   }
+
+  client.loop();
+  delay(10); // <- fixes some issues with WiFi stability
 
   // publish a message roughly every second.
   if (millis() - lastMillis > 1000) {
