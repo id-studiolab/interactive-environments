@@ -45,27 +45,32 @@ function draw(){
  		//todo victory screen
 			if (winner=="red"){
 
+				fill('red');
+				rect(0,0,width,height);
+				fill('white')
+				textSize(100);
+				textAlign(CENTER, CENTER)
+				text("RED WON", 50,50, width-100,height-100);
 			}else {
-
+				fill('red');
+				rect(0,0,width,height);
+				fill('white')
+				textSize(100);
+				textAlign(CENTER, CENTER)
+				text("RED WON", 50,50, width-100,height-100);
 			}
-			fill('red');
-			rect(0,0,width*redProgress,height);
-			fill('blue')
-			rect(width*redProgress,0,width*redProgress,height);
-
-			fill('white')
-			textSize(100);
-			textAlign(CENTER, CENTER)
-			text("TAP", 50,50, width-100,height-100);
-
 		}
-
-
-		default:
 
 	}
 
 }
+
+
+function resetGame(){
+	gameStatus=0;
+	redProgress=0.5;
+}
+
 
 function mouseClicked(){
 
