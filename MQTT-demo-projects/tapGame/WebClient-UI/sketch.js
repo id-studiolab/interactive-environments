@@ -74,11 +74,21 @@ function mouseClicked(){
 	}
 	if (gameStatus==1){
 
-		if (mouseX<width*redProgress){
-			client.publish('/tapGame/team0', "+1");
-		}else if (mouseX>width*redProgress){
-			client.publish('/tapGame/team1', "+1");
+		if (mouseX){
+			if (mouseX<width*redProgress){
+				client.publish('/tapGame/team0', "+1");
+			}else if (mouseX>width*redProgress){
+				client.publish('/tapGame/team1', "+1");
+			}
+		}else{
+			if (touches[0].x<width*redProgress){
+				client.publish('/tapGame/team0', "+1");
+			}else if (touches[0].x>width*redProgress){
+				client.publish('/tapGame/team1', "+1");
+			}
 		}
+
+
 	}
 
 }
