@@ -59,6 +59,9 @@ function draw(){
 				textAlign(CENTER, CENTER)
 				text("RED WON", 50,50, width-100,height-100);
 			}
+
+			setTimeout(resetGame(), 2000);
+
 		}
 
 	}
