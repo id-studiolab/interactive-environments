@@ -87,10 +87,7 @@ function mouseClicked(){
 				client.publish('/tapGame/team1', "+1");
 			}
 		}
-
-
 	}
-
 }
 
 
