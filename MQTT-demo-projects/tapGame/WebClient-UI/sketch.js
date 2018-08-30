@@ -7,7 +7,7 @@ var gameStatus=0;
 var redProgress=0.5;
 
 
-var winner=red;
+var winner="red";
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
