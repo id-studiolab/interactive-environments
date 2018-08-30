@@ -3,7 +3,7 @@
 This example demonstrate how you can build a multi-player, multi-device, networked game using mqtt.
 You can try the game [here](https://idstudiolab.github.io/interactive-environments/MQTT-demo-projects/tapGame/WebClient-UI/)
 
-![tap game system diagram](https://github.com/idstudiolab/interactive-environments/blob/master/MQTT%20demo%20projects/tapGame/assets/schema_1.jpeg?raw=true  "system diagram")
+![tap game system diagram](https://raw.githubusercontent.com/idstudiolab/interactive-environments/master/MQTT-demo-projects/tapGame/assets/schema_1.jpeg  "system diagram")
 
 ### Structure of the system:
 - The webapp can be opened on user's browser, both on desktop or mobile phones.
