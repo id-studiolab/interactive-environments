@@ -1,4 +1,4 @@
-var client = mqtt.connect('mqtt://a0e78aaf:2626bb47aaf15e04@broker.shiftr.io', {
+var client = mqtt.connect('wss://a0e78aaf:2626bb47aaf15e04@broker.shiftr.io', {
   clientId: 'javascript'
 });
 
@@ -9,7 +9,6 @@ client.on('connect', function(){
 });
 
 client.on('message', function(topic, message) {
-
 	messageReceaved(topic,message.toString());
 });
 
