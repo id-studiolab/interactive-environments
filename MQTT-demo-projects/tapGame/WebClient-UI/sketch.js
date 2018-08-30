@@ -107,6 +107,10 @@ function messageReceaved(topic,message){
 	console.log(topic,message);
 	if(topic=="/tapGame/redProgress"){
 		redProgress=parseFloat(message);
+
+		if (redProgress!=.5){ //if someone is tapping already start the game
+			gameStatus=1;
+		}
 	}else if(topic=="/tapGame/victory"){
 		gameStatus=2;
 		winner=message;
