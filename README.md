@@ -5,4 +5,4 @@ On this repository you will find several resources and example code to inspire a
 
 So far you can find:
 - [An example of a multiplayer networked game](https://idstudiolab.github.io/interactive-environments/MQTT-demo-projects/tapGame/)
-- [A monitor that collects ambient sensor data in a room](https://idstudiolab.github.io/interactive-environments/MQTT-demo-projects/ambient-monitor)
+- A monitor that collects ambient sensor data in a room
