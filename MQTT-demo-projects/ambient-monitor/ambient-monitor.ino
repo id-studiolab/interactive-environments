@@ -1,8 +1,8 @@
 #include <WiFi.h>
 #include <MQTTClient.h>
 
-const char ssid[] = "iot-net";
-const char pass[] = "interactive";
+const char ssid[] = "#ssid";
+const char pass[] = "#pass";
 
 WiFiClient net;
 MQTTClient client;
@@ -26,7 +26,7 @@ void connect() {
   }
 
   Serial.print("\nconnecting...");
-  while (!client.connect("ambient-monitor", "connected-object", "c784e41dd3da48d4")) {
+  while (!client.connect("ambient-monitor", "#username", "#password")) {
     Serial.print(".");
     delay(1000);
   }
@@ -42,7 +42,7 @@ void loop() {
   if (!client.connected()) {
     connect();
   }
-  
+
   // put your main code here, to run repeatedly:
   if (Serial1.available() > 0) {
     char type = Serial1.read();
@@ -73,7 +73,7 @@ void loop() {
         client.publish("/environment/CO2", payload);
         break;
     }
-    
+
   }
 }
 
