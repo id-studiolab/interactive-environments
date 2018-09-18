@@ -1,7 +1,6 @@
-## interactive environments resources
+## Interactive Environments Resources
 
-On this repository you will find several resources and example code to inspire and help you develop new interactive concepts.
-
+On this repository you will find example code and resources to inspire and help you develop new interactive concepts.
 
 So far you can find:
 
