@@ -30,8 +30,22 @@ maxApi.addHandler("connect", (h, u, p, c) => {
 
 	client.on('message', function(topic, message) {
 		console.log('new message:', topic, message.toString());
-		maxApi.outlet(topic, message.toString());
-	});
+		
+		var m=message.toString();
+		var argumentsList=m.split(" "); 
+		
+		for (var i=0; i<argumentsList.length;i++){
+			if (!isNaN(Number(argumentsList[i]))){
+				argumentsList[i]=Number(argumentsList[i]);			
+			}	
+		}
+
+		argumentsList.unshift(topic);
+		console.log('new message:', argumentsList);
+		maxApi.outlet(argumentsList);
+		
+		
+		});
 	
 	client.on('close', () => {
 		if (connected != false) {
@@ -55,7 +69,13 @@ maxApi.addHandler("subscribe", (topic) => {
 
 maxApi.addHandler("publish", (topic, ...message) => {
 	if (connected == true) {
-		client.publish(topic, message.toString());
+		var messages="";
+		console.log(topic,args.length);
+		for (var i=0; i<args.length;i++){
+			messages+=args[i]+" ";
+		}
+		console.log(messages);
+		client.publish(topic,messages.toString());
 	}
 	else {
 		console.log('client not connected!');		
