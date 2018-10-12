@@ -13,72 +13,80 @@ var host = "";
 var connected = false;
 var client;
 
+var enableDebug = true;
+
 maxApi.addHandler("connect", (h, u, p, c) => {
 	host = h;
 	username = u;
 	password = p;
-	clientId= c;
+	clientId = c;
 
 	client = mqtt.connect('mqtt://' + username + ':' + password + '@' + host, {
 		clientId: clientId
 	});
 
 	client.on('connect', function() {
-		console.log('client has connected!');
+		debug('client has connected!');
 		connected = true;
 	});
 
 	client.on('message', function(topic, message) {
-		console.log('new message:', topic, message.toString());
-		
-		var m=message.toString();
-		var argumentsList=m.split(" "); 
-		
-		for (var i=0; i<argumentsList.length;i++){
-			if (!isNaN(Number(argumentsList[i]))){
-				argumentsList[i]=Number(argumentsList[i]);			
-			}	
+		debug('received: ' + message.toString() + " on topic: " + topic, );
+
+		var m = message.toString();
+		var argumentsList = m.split(" ");
+
+		for (var i = 0; i < argumentsList.length; i++) {
+			if (!isNaN(Number(argumentsList[i]))) {
+				argumentsList[i] = Number(argumentsList[i]);
+			}
 		}
 
 		argumentsList.unshift(topic);
-		console.log('new message:', argumentsList);
 		maxApi.outlet(argumentsList);
-		
-		
-		});
-	
+	});
+
 	client.on('close', () => {
 		if (connected != false) {
-			maxApi.post('client disconnected!');
+			debug('client disconnected!');
 			connected = false;
 		}
 	});
 
 });
 
-maxApi.addHandler("subscribe", (topic) => {
-	if (connected == true) {
-		client.subscribe(topic);
-	}
-	else {
-		console.log('client not connected!');		
-		maxApi.post('client not connected!');
-	}
-		
+maxApi.addHandler("toggleDebug", () => {
+	enableDebug = !enableDebug;
 });
 
-maxApi.addHandler("publish", (topic, ...message) => {
+maxApi.addHandler("subscribe", (topic) => {
 	if (connected == true) {
-		var messages="";
-		console.log(topic,args.length);
-		for (var i=0; i<args.length;i++){
-			messages+=args[i]+" ";
-		}
-		console.log(messages);
-		client.publish(topic,messages.toString());
-	}
-	else {
-		console.log('client not connected!');		
-		maxApi.post('client not connected!');
+		debug('subscribed to: ' + topic)
+		client.subscribe(topic);
+	} else {
+		debug('client not connected!')
 	}
 });
+
+maxApi.addHandler("publish", (topic, ...args) => {
+	if (connected == true) {
+		var messages = "";
+		for (var i = 0; i < args.length; i++) {
+			messages += args[i];
+			if (i != args.length - 1) {
+				messages += " ";
+			}
+		}
+		debug('sending: ' + messages.toString() + " on topic: " + topic, );
+		client.publish(topic, messages.toString());
+	} else {
+		debug('client not connected!')
+	}
+});
+
+function debug(msg) {
+	if (enableDebug){
+		console.log(msg);
+		maxApi.post(msg);
+	}
+}
