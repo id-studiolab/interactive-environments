@@ -8,4 +8,4 @@ So far you can find:
 - A [basic MQTT client with OLED screen output](https://idstudiolab.github.io/interactive-environments/MQTT-demo-projects/lolin_oled_mqtt_simple/) for the [LoLin OLED](https://bit.ly/2xkBlO5) board
 - A monitor that collects ambient sensor data in a room
 - A [Max patch](https://github.com/idstudiolab/interactive-environments/tree/master/MQTT-demo-projects/max-node-interface) that will help you connect to shiftr.io
-- Some p5.js example sketches
+- Some [p5.js example sketches](https://idstudiolab.github.io/interactive-environments/p5js-demo/)
