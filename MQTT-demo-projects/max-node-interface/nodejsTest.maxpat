@@ -10,7 +10,7 @@
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ 87.0, 79.0, 847.0, 565.0 ],
+		"rect" : [ 886.0, 141.0, 327.0, 532.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 0,
 		"default_fontsize" : 12.0,
@@ -315,7 +315,7 @@
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
 					"patching_rect" : [ 1215.333251953125, 902.33331298828125, 312.66668701171875, 22.0 ],
-					"text" : "publish /minorinteractive/studio/electroforest/4 0 0 0"
+					"text" : "publish /minorinteractive/studio/electroforest/9 15 5 0"
 				}
 
 			}
@@ -415,7 +415,7 @@
 					"numoutlets" : 1,
 					"outlettype" : [ "int" ],
 					"patching_rect" : [ 1239.0, 578.66668701171875, 85.0, 22.0 ],
-					"text" : "tempo 20 1 12"
+					"text" : "tempo 40 1 12"
 				}
 
 			}
@@ -494,11 +494,11 @@
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 479.0, 400.999969482421875, 389.0, 22.0 ],
+					"patching_rect" : [ 479.0, 400.999969482421875, 375.0, 22.0 ],
 					"presentation" : 1,
 					"presentation_linecount" : 3,
 					"presentation_rect" : [ 309.0, 172.0, 219.0, 49.0 ],
-					"text" : "connect broker.shiftr.io connected-object c784e41dd3da48d4 maxPatch"
+					"text" : "connect broker.shiftr.io connected-object c784e41dd3da48d4 lorenzo"
 				}
 
 			}
