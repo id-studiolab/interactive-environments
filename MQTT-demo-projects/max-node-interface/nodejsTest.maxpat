@@ -10,7 +10,7 @@
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ 886.0, 141.0, 327.0, 532.0 ],
+		"rect" : [ 608.0, 206.0, 591.0, 532.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 0,
 		"default_fontsize" : 12.0,
@@ -155,7 +155,7 @@
 					"maxclass" : "comment",
 					"numinlets" : 1,
 					"numoutlets" : 0,
-					"patching_rect" : [ 1446.0, 579.33331298828125, 82.166664123535156, 20.0 ],
+					"patching_rect" : [ 1446.0, 495.666656494140625, 82.166664123535156, 20.0 ],
 					"presentation" : 1,
 					"presentation_rect" : [ 1840.6666259765625, 338.33331298828125, 219.5, 20.0 ],
 					"text" : "DURATION"
@@ -168,7 +168,7 @@
 					"maxclass" : "comment",
 					"numinlets" : 1,
 					"numoutlets" : 0,
-					"patching_rect" : [ 1446.0, 497.666656494140625, 82.166664123535156, 20.0 ],
+					"patching_rect" : [ 1446.0, 578.66668701171875, 82.166664123535156, 20.0 ],
 					"presentation" : 1,
 					"presentation_rect" : [ 616.0, 250.5, 219.5, 20.0 ],
 					"text" : "INTENSITY"
@@ -213,7 +213,7 @@
 					"outlettype" : [ "" ],
 					"parameter_enable" : 0,
 					"patching_rect" : [ 1446.0, 519.6666259765625, 202.0, 28.0 ],
-					"size" : 100.0
+					"size" : 10000.0
 				}
 
 			}
@@ -310,12 +310,13 @@
 , 			{
 				"box" : 				{
 					"id" : "obj-98",
+					"linecount" : 2,
 					"maxclass" : "message",
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 1215.333251953125, 902.33331298828125, 312.66668701171875, 22.0 ],
-					"text" : "publish /minorinteractive/studio/electroforest/9 15 5 0"
+					"patching_rect" : [ 1215.333251953125, 902.33331298828125, 312.66668701171875, 35.0 ],
+					"text" : "publish /minorinteractive/studio/electroforest/0 2741 88 85"
 				}
 
 			}
