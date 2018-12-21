@@ -1,1 +1,1 @@
-This is were the gemma project lives
+This is were the gemma project lives.
