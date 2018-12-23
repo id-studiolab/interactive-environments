@@ -1,1 +1,1 @@
-This is were the daily/meet/now project lives
+This is were the daily/meet/now project lives.
