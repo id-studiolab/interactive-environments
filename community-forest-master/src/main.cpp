@@ -85,8 +85,6 @@ void connect()
 
     client.connect(MQTT_NAME, MQTT_USERNAME, MQTT_PASSWORD);
     client.subscribe("/forest/time");
-    client.subscribe("/forest/led");
-    client.subscribe("/forest/nextHue");
 
     if (client.connected())
     {

@@ -86,4 +86,8 @@ void onMessage(String &topic, String &payload)
             controller->startLED();
         }
     }
+    else if (topic == "/forest/time")
+    {
+        controller->setCycleTime(payload.toInt());
+    }
 }

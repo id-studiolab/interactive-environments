@@ -29,6 +29,11 @@ void ForestController::setLED(int amount, int brightness, double hue)
     }
 }
 
+void ForestController::setCycleTime(int newCycle)
+{
+    cycle = newCycle;
+}
+
 int ForestController::getAmountOfLeds()
 {
     int value = analogRead(MOISTURE_PIN);

@@ -16,7 +16,7 @@
 #define MQTT_USERNAME "a0e78aaf"
 #define MQTT_PASSWORD "2626bb47aaf15e04"
 
-#define SHORT_CYCLE 150000
+#define CYCLE 150000
 
 #define LEDPIN D2
 #define MOISTURE_PIN A0
@@ -30,6 +30,7 @@ class ForestController
     void startLED();
     void loop();
     void setLED(int amount, int brightness, double hue);
+    void setCycleTime(int newCycle);
 
   protected:
     int getAmountOfLeds();
@@ -55,8 +56,8 @@ class ForestController
     double targetHue = nextHue;
     double hueIncrease;
     double activatedHue = currentHue;
-    int shortCycle = SHORT_CYCLE;
-    int timerInterval = shortCycle / totalStrips;
+    int cycle = CYCLE;
+    int timerInterval = cycle / totalStrips;
 
     CRGB strip[6];
     int amountLeds;
