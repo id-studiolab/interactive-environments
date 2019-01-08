@@ -164,6 +164,7 @@ static const uint8_t PROGMEM DIGITS[][8] = {
 void setup(){
   Wire.begin();
   Serial.begin(9600);
+  battery.setup();  // setup fuel gauge
 //
 //  WiFi.begin(ssid, pass);
 //  client.begin("192.168.1.23", net);
@@ -204,8 +205,9 @@ void loop()
 void chargeLoop()
 {
   int charge = battery.chargePercentage();  // get %
-  //Serial.println(charge);
   battery.reset();  // reset for next data request
+  Serial.print(charge); // print out the battery %
+  Serial.println("%");
   int hue;
   if(charge<25){
     hue = red;
@@ -460,7 +462,7 @@ void breakAlarm()
 
 //draws the passed number (max 2 digits) on the led matrix display
 //uses the DIGITS array specified at the top
-void drawNumbers(long number)
+void drawNumbers(int number)
 {
   int first = number/ 10;
   int second = number % 10;
@@ -485,7 +487,7 @@ bool isCharging()
   // Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 5V):
   float voltage = sensorValue * (5.0 / 1023.0);
   // print out the value you read:
-  Serial.println(voltage);
+  //Serial.println(voltage);
   if (voltage > THRESHOLD_CHARGING)
     return true;
   else
