@@ -3,22 +3,20 @@
 #include <FastLED.h>
 #include <math.h>
 
-#include <ESP8266WiFi.h>
-#include <WiFiClientSecure.h>
-#include <MQTT.h>
 #include <stdexcept>
 #include <vector>
+#include <cstring>
 
 #ifndef FORESTCONTROLLER_H
 #define FORESTCONTROLLER_H
-#define WIFI_SSID "blabla"
-// #define WIFI_SSID "iot-net"
+// #define WIFI_SSID "blabla"
+#define WIFI_SSID "iot-net"
 #define WIFI_PASS "interactive"
 
 #define MQTT_USERNAME "a0e78aaf"
 #define MQTT_PASSWORD "2626bb47aaf15e04"
 
-#define SHORT_CYCLE 60000
+#define SHORT_CYCLE 150000
 
 #define LEDPIN D2
 #define MOISTURE_PIN A0
@@ -26,19 +24,16 @@
 class ForestController
 {
   public:
-    MQTTClient client;
-
     ForestController(int id, int amtLeds);
     ~ForestController();
-
+    void setHue(double hue);
+    void startLED();
     void loop();
+    void setLED(int amount, int brightness, double hue);
 
   protected:
     int getAmountOfLeds();
     void onMessage(String &topic, String &payload);
-    void setLED(int amount, int brightness, double hue);
-    void connect();
-    void startLED();
 
     const int totalStrips = 10;
     int stripOffset;
@@ -48,20 +43,18 @@ class ForestController
     unsigned long wifiTimer;
     unsigned long brightnessTimer;
 
-    WiFiClientSecure net;
-    String mqttUsername;
-
     int id;
-    const int minBrightness = 150;
+    const int minBrightness = 100;
     const int maxBrightness = 255;
     double activatedBrightness = minBrightness;
     int targetBrightness = maxBrightness;
-    const int brightnessInterval = 110;
+    const unsigned int brightnessInterval = 110;
 
     double currentHue = 120.0;
-    double nextHue;
+    double nextHue = 280.0;
+    double targetHue = nextHue;
     double hueIncrease;
-    double activatedHue;
+    double activatedHue = currentHue;
     int shortCycle = SHORT_CYCLE;
     int timerInterval = shortCycle / totalStrips;
 
