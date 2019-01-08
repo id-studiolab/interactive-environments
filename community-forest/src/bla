@@ -1,0 +1,264 @@
+#include <Arduino.h>
+
+#include <main.h>
+#include <FastLED.h>
+#ifdef __AVR__
+#include <avr/power.h>
+#endif
+#include <math.h>
+#include <WiFiClientSecure.h>
+#include <MQTT.h>
+
+WiFiClientSecure net;
+MQTTClient client;
+
+const char *ssid = "iot-net";
+const char *password = "interactive";
+
+//mqtt settings
+const char mqtt_clientID[] = "CommunityForestMaster0";
+const char mqtt_username[] = "a0e78aaf";
+const char mqtt_password[] = "2626bb47aaf15e04";
+
+const int totalStrips = 18;
+const int ownStrips = 5;
+
+unsigned long timer = 0;
+int currentStrip = 0;
+
+const int minBrightness = 150;
+const int maxBrightness = 255;
+double activatedBrightness = minBrightness;
+int targetBrightness = maxBrightness;
+
+double currentHue = 120.0;
+double nextHue;
+double hueIncrease;
+double activatedHue;
+bool ledSent = false;
+
+int shortCycle = 600000; //10 minutes
+// int shortCycle = 150000;                       //2 minutes
+int timerInterval = shortCycle / totalStrips; // 30 secs
+const int brightnessInterval = 110;
+int brightnessTimer = 0;
+double brightnessIncrease()
+{
+    return 1.1 * calculateIncrease(maxBrightness, minBrightness, brightnessInterval, timerInterval, true);
+}
+
+const int strip0Leds = 6;
+const int strip1Leds = 6;
+const int strip2Leds = 6;
+const int strip3Leds = 6;
+const int strip4Leds = 6;
+
+const int ledsPerStrip[ownStrips] = {strip0Leds, strip1Leds, strip2Leds, strip3Leds, strip4Leds};
+// const int ledsPerStrip[ownStrips] = {strip0Leds, strip1Leds, strip2Leds};
+CRGB strip0[strip0Leds];
+CRGB strip1[strip1Leds];
+CRGB strip2[strip2Leds];
+CRGB strip3[strip3Leds];
+CRGB strip4[strip4Leds];
+
+CRGB *strips[ownStrips] = {strip0, strip1, strip2, strip3, strip4};
+// CRGB *strips[ownStrips] = {strip0, strip1, strip2};
+
+const int moisturePin = 36;
+
+void setup1()
+{
+    // put your setup code here, to run once:
+    Serial.begin(9600);
+    FastLED.addLeds<NEOPIXEL, 0>(strip0, strip0Leds);
+    FastLED.addLeds<NEOPIXEL, 2>(strip1, strip1Leds);
+    FastLED.addLeds<NEOPIXEL, 14>(strip2, strip2Leds);
+    FastLED.addLeds<NEOPIXEL, 12>(strip3, strip3Leds);
+    FastLED.addLeds<NEOPIXEL, 13>(strip4, strip4Leds);
+    pinMode(moisturePin, INPUT);
+
+    setHue();
+    delay(2000);
+    WiFi.begin(ssid, password);
+    delay(2000);
+    client.begin("broker.shiftr.io", 8883, net);
+    delay(2000);
+    client.connect(mqtt_clientID, mqtt_username, mqtt_password);
+    client.subscribe("/forest/time");
+
+    connect();
+    for (int i = 0; i < ownStrips; i++)
+    {
+        setLED(i, ledsPerStrip[i], minBrightness, currentHue);
+    }
+}
+
+void loop1()
+{
+    client.loop();
+    if (millis() - timer >= timerInterval)
+    {
+        timer = millis();
+        connect();
+
+        currentStrip++;
+        activatedBrightness = minBrightness;
+        targetBrightness = maxBrightness;
+
+        if (currentStrip == totalStrips)
+        {
+            currentStrip = 0;
+            setHue();
+        }
+        activatedHue = currentHue;
+        ledSent = false;
+        Serial.println("currentStrip = " + String(currentStrip) + ", next hue = " + nextHue);
+    }
+
+    if (millis() - brightnessTimer >= brightnessInterval)
+    {
+
+        brightnessTimer = millis();
+
+        if (activatedBrightness <= targetBrightness)
+            activatedBrightness += brightnessIncrease();
+        if (activatedBrightness >= targetBrightness)
+            activatedBrightness -= brightnessIncrease();
+
+        if (activatedBrightness >= maxBrightness - 5)
+            targetBrightness = minBrightness;
+
+        if (activatedBrightness < 0)
+            activatedBrightness = 0;
+        if (activatedBrightness > 255)
+            activatedBrightness = 255;
+
+        if (abs(nextHue - activatedHue) > abs(hueIncrease * 2.0))
+        {
+            activatedHue = fmod(activatedHue + hueIncrease + 360.0, 360.0);
+        }
+        for (int i = 0; i < totalStrips; i++)
+        {
+            if (i < ownStrips)
+            {
+                if (i < currentStrip)
+                {
+                    setLED(i, getAmountOfLeds(i), minBrightness, nextHue);
+                }
+                else if (i == currentStrip)
+                {
+                    setLED(i, getAmountOfLeds(i), activatedBrightness, activatedHue);
+                }
+                else
+                {
+                    setLED(i, getAmountOfLeds(i), minBrightness, currentHue);
+                }
+            }
+            else if (!ledSent && i == currentStrip)
+            {
+                sendLED(i, brightnessIncrease(), hueIncrease, nextHue);
+                ledSent = true;
+            }
+        }
+
+        FastLED.show();
+    }
+    delay(5);
+}
+
+int getAmountOfLeds(int strip)
+{
+    if (strip >= 3)
+    {
+        return ledsPerStrip[strip];
+    }
+    int value = analogRead(moisturePin);
+    int amount;
+    if (value > 2800)
+    {
+        amount = map(value, 2800, 4096, ledsPerStrip[strip], 2);
+    }
+    else
+    {
+        amount = map(value, 0, 2800, 2, ledsPerStrip[strip]);
+    }
+
+    return constrain(amount, 2, ledsPerStrip[strip]);
+}
+
+void setHue()
+{
+    currentHue = nextHue;
+    nextHue = getNewHue(currentHue);
+    hueIncrease = 2.0 * calculateHsvIncrease(currentHue, nextHue, brightnessInterval, timerInterval);
+    activatedHue = currentHue;
+    if (client.connected())
+    {
+        Serial.println("sending " + String(nextHue) + ' ' + "to forest/nextHue");
+        client.publish("forest/nextHue", String(nextHue));
+    }
+}
+
+void setLED(int strip, int amount, int brightness, double hue)
+{
+    int mappedHue = map(hue, 0, 360, 0, 255);
+
+    for (int i = 0; i < ledsPerStrip[strip]; i++)
+    {
+        if (i >= ledsPerStrip[strip] - amount)
+        {
+            strips[strip][i].setHSV(mappedHue, 255, brightness);
+        }
+        else
+        {
+            strips[strip][i].setRGB(0, 0, 0);
+        }
+    }
+}
+
+void sendLED(int strip, double brightnessIncrease, double hueIncrease, double nextHue)
+{
+    String msg = String(strip);
+    Serial.println("sending: " + msg + " to /forest/led");
+    client.publish("/forest/led", msg);
+}
+
+void connect()
+{
+    if (WiFi.status() != WL_CONNECTED)
+    {
+        // WiFi.begin(ssid, password);
+        Serial.println("No Wifi connection");
+    }
+    else if (!client.connected())
+    {
+        client.connect(mqtt_clientID, mqtt_username, mqtt_password);
+        client.subscribe("/forest/time");
+
+        Serial.println("No mqtt connection");
+    }
+    brightnessTimer = millis();
+    timer = millis();
+}
+
+double getNewHue(double current)
+{
+    return fmod(current + (random8(1) > 0.5 ? 1.0 : -1.0) * random8(40, 140) + 360.0, 360.0);
+}
+
+void onMessage(String &topic, String &payload)
+{
+    if (topic == "/forest/time")
+    {
+        if (payload == "fast")
+        {
+            shortCycle = 150000;
+        }
+        else
+        {
+            shortCycle = 600000;
+        }
+        timerInterval = shortCycle / totalStrips;
+        timer = millis();
+    }
+}
