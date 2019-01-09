@@ -2,8 +2,8 @@
 #include <ESP8266WiFi.h>
 #include <MQTT.h>
 
-const char ssid[] = "Science-Centre-EVENT";
-const char pass[] = "ScienceCentre";
+const char ssid[] = "iot-net";
+const char pass[] = "interactive";
 
 SoftwareSerial mySerial(5, 6);
 
