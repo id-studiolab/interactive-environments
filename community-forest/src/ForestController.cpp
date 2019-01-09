@@ -36,11 +36,19 @@ void ForestController::setCycleTime(int newCycle)
 
 int ForestController::getAmountOfLeds()
 {
+    if (!moistureOn)
+    {
+        return amountLeds;
+    }
     int value = analogRead(MOISTURE_PIN);
-    Serial.println(value);
     int amount = map(value, 0, 500, 2, amountLeds);
 
     return constrain(amount, 2, amountLeds);
+}
+
+void ForestController::enableMoisture(bool enable)
+{
+    moistureOn = enable;
 }
 
 void ForestController::loop()
@@ -62,12 +70,12 @@ void ForestController::loop()
         if (activatedBrightness > 255)
             activatedBrightness = 255;
 
-        if (abs(targetHue - activatedHue) > abs(hueIncrease * 2.0))
+        if (abs(targetHue - currentHue) > abs(hueIncrease * 2.0))
         {
-            activatedHue = fmod(activatedHue + hueIncrease + 360.0, 360.0);
+            currentHue = fmod(currentHue + hueIncrease + 360.0, 360.0);
         }
 
-        setLED(getAmountOfLeds(), minBrightness, activatedHue);
+        setLED(getAmountOfLeds(), activatedBrightness, currentHue);
 
         FastLED.show();
     }
@@ -76,8 +84,6 @@ void ForestController::loop()
 void ForestController::startLED()
 {
     hueIncrease = 2.0 * calculateHsvIncrease(currentHue, nextHue, brightnessInterval, timerInterval);
-    activatedHue = currentHue;
-    activatedBrightness = minBrightness;
     targetBrightness = maxBrightness;
     targetHue = nextHue;
 }
@@ -86,7 +92,6 @@ void ForestController::setHue(double hue)
 {
     if (abs(hue - nextHue) > 5)
     {
-        currentHue = nextHue;
         nextHue = hue;
     }
 }

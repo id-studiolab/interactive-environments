@@ -31,6 +31,7 @@ class ForestController
     void loop();
     void setLED(int amount, int brightness, double hue);
     void setCycleTime(int newCycle);
+    void enableMoisture(bool enable);
 
   protected:
     int getAmountOfLeds();
@@ -45,22 +46,22 @@ class ForestController
     unsigned long brightnessTimer;
 
     int id;
-    const int minBrightness = 100;
+    const int minBrightness = 150;
     const int maxBrightness = 255;
     double activatedBrightness = minBrightness;
     int targetBrightness = maxBrightness;
     const unsigned int brightnessInterval = 110;
 
-    double currentHue = 120.0;
     double nextHue = 280.0;
     double targetHue = nextHue;
     double hueIncrease;
-    double activatedHue = currentHue;
+    double currentHue = 120.0;
     int cycle = CYCLE;
     int timerInterval = cycle / totalStrips;
 
     CRGB strip[6];
     int amountLeds;
+    bool moistureOn = true;
 
     double calculateIncrease(double a, double b, double updateInterval, double time, bool round)
     {
