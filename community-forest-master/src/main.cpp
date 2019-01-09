@@ -22,9 +22,9 @@ unsigned long timer = 0;
 int currentModule = 0;
 int currentHue = 120.0;
 
-// int shortCycle = 600000; //10 minutes
-int shortCycle = 150000;
-unsigned int timerInterval = shortCycle / totalModules;
+// int cycle = 600000; //10 minutes
+int cycle = 150000;
+unsigned int timerInterval() { return cycle / totalModules; }
 Ticker hueSend;
 
 void setup()
@@ -54,7 +54,7 @@ void loop()
     connect();
   }
 
-  if (millis() - timer >= timerInterval)
+  if (millis() - timer >= timerInterval())
   {
     timer = millis();
     connect();
@@ -136,7 +136,8 @@ void onMessage(String &topic, String &payload)
 {
   Serial.println("incoming: " + topic + " - " + payload);
 
-  if (topic == "/forest/hue")
+  if (topic == "/forest/time")
   {
+    cycle = payload.toInt();
   }
 }
