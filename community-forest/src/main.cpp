@@ -26,6 +26,7 @@ void setup()
     client.subscribe("/forest/time");
     client.subscribe("/forest/led");
     client.subscribe("/forest/hue");
+    client.subscribe("/forest/moisture");
     connect();
     Serial.println("Setup Done");
 }
@@ -60,7 +61,8 @@ void connect()
         client.connect(String(id).c_str(), MQTT_USERNAME, MQTT_PASSWORD);
         client.subscribe("/forest/time");
         client.subscribe("/forest/led");
-        client.subscribe("/forest/nextHue");
+        client.subscribe("/forest/hue");
+        client.subscribe("/forest/moisture");
 
         if (client.connected())
         {
@@ -73,7 +75,7 @@ void onMessage(String &topic, String &payload)
 {
     Serial.println("incoming: " + topic + " - " + payload);
 
-    if (topic == "/forest/nextHue")
+    if (topic == "/forest/hue")
     {
         controller->setHue(payload.toFloat());
     }
@@ -81,7 +83,6 @@ void onMessage(String &topic, String &payload)
     {
         if (payload.toInt() == id)
         {
-
             Serial.println("starting led");
             controller->startLED();
         }
@@ -89,5 +90,16 @@ void onMessage(String &topic, String &payload)
     else if (topic == "/forest/time")
     {
         controller->setCycleTime(payload.toInt());
+    }
+    else if (topic == "/forest/moisture")
+    {
+        if (payload.toInt() == 1)
+        {
+            controller->enableMoisture(false);
+        }
+        else
+        {
+            controller->enableMoisture(true);
+        }
     }
 }
