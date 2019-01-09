@@ -1,12 +1,11 @@
-//#include <SoftwareSerial.h>
+#include <SoftwareSerial.h>
 #include <ESP8266WiFi.h>
 #include <MQTT.h>
 
 const char ssid[] = "Science-Centre-EVENT";
 const char pass[] = "ScienceCentre";
 
-String inputString = "";
-bool stringComplete = false;
+SoftwareSerial mySerial(5, 6);
 
 WiFiClient net;
 MQTTClient client;
@@ -30,17 +29,30 @@ void connect() {
 }
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(19200);
+  mySerial.begin(9600);
   WiFi.begin(ssid, pass);
-  pinMode(LED_BUILTIN, OUTPUT);
-  pinMode(5, INPUT_PULLUP);
 
   client.begin("broker.shiftr.io", net);
 
-  inputString.reserve(200);
-
   connect();
   delay(1000);
+}
+
+String getValue(String data, char separator, int index) {
+  int found = 0;
+  int strIndex[] = {0, -1};
+  int maxIndex = data.length()-1;
+
+  for(int i=0; i<=maxIndex && found<=index; i++){
+    if(data.charAt(i)==separator || i==maxIndex){
+        found++;
+        strIndex[0] = strIndex[1]+1;
+        strIndex[1] = (i == maxIndex) ? i+1 : i;
+    }
+  }
+
+  return found>index ? data.substring(strIndex[0], strIndex[1]) : "";
 }
 
 void loop() {
@@ -50,8 +62,23 @@ void loop() {
   if (!client.connected()) {
     connect();
   }
+  
+  if (mySerial.available()) {
+    String data = mySerial.readString();
+    String dataTemp = getValue(data, '\n', 0);
+    String dataHumi = getValue(data, '\n', 1);
+    String dataCarb = getValue(data, '\n', 2);
 
-  //client.publish("/test", "test");
-  delay(2000);
+    dataTemp.remove(4);
+    dataHumi.remove(4);
+    dataCarb.remove(4);
 
+    if (dataCarb.endsWith("C")) {
+      dataCarb.remove(3);
+    }
+
+    client.publish("/cozone/temperature", dataTemp);
+    client.publish("/cozone/humidity", dataHumi);
+    client.publish("/cozone/co2", dataCarb);
+  }
 }

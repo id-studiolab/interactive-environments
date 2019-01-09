@@ -24,7 +24,7 @@ const unsigned char cmd_get_sensor[] = {
 int CO2PPM;
 int sendCounter = 0;
 
-const long interval = 400;
+const long interval = 5000;
 int prevTime = 0;
 
 void setup() {
@@ -58,7 +58,6 @@ void loop() {
     humidring.setPixelColor(i, 0, 0, 0);
     co2ring.setPixelColor(i, 0, 0, 0);
   }
-  Serial.println(String(CO2PPM) + " " + String(co2amount));
 
   for (int i = 0; i < tempamount; i++) {
     tempring.setPixelColor(15-i, 15, 15, 15);
@@ -72,6 +71,11 @@ void loop() {
   tempring.show();
   humidring.show();
   co2ring.show();
+
+  Serial.println(String(temperature) + "T");
+  Serial.println(String(humidity) + "H");
+  Serial.println(String(CO2PPM) + "C");
+  
   delay(interval);
 }
 
