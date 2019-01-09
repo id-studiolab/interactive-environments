@@ -1,1 +1,1 @@
-This is were the Membrain project lives
+This is were the CoZone project lives
