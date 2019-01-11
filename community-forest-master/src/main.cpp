@@ -15,15 +15,15 @@ void onMessage(String &topic, String &payload);
 double getNewHue(double current);
 void sendHue();
 void setHue();
-void sendLED(int module, double brightnessIncrease, double hueIncrease, double nextHue);
+void sendLED(int module, double brightnessIncrease, double hueIncrease, double hue);
 
-const int totalModules = 28;
+int totalModules = 10;
 unsigned long timer = 0;
-int currentModule = 0;
+int currentModule = -1;
 int currentHue = 120.0;
 
-// int cycle = 600000; //10 minutes
-int cycle = 150000;
+int cycle = 600000; //10 minutes
+// int cycle = 150000;
 unsigned int timerInterval() { return cycle / totalModules; }
 Ticker hueSend;
 
@@ -37,9 +37,9 @@ void setup()
   delay(2000);
   client.connect(MQTT_NAME, MQTT_USERNAME, MQTT_PASSWORD);
   client.subscribe("/forest/time");
-  client.subscribe("/forest/led");
-  client.subscribe("/forest/nextHue");
+  client.subscribe("/forest/total");
   connect();
+  delay(10000);
   Serial.println("Setup Done");
 }
 
@@ -60,12 +60,12 @@ void loop()
     connect();
 
     currentModule++;
-    sendLED(currentModule, 0, 0, currentHue);
-    if (currentModule == totalModules)
+    if (currentModule >= totalModules)
     {
       currentModule = 0;
       setHue();
     }
+    sendLED(currentModule, 0, 0, currentHue);
     Serial.println("currentStrip = " + String(currentModule) + ", next hue = " + currentHue);
   }
 
@@ -85,6 +85,7 @@ void connect()
 
     client.connect(MQTT_NAME, MQTT_USERNAME, MQTT_PASSWORD);
     client.subscribe("/forest/time");
+    client.subscribe("/forest/total");
 
     if (client.connected())
     {
@@ -111,9 +112,11 @@ void setHue()
   }
 }
 
-void sendLED(int module, double brightnessIncrease, double hueIncrease, double nextHue)
+void sendLED(int module, double brightnessIncrease, double hueIncrease, double hue)
 {
   String msg = String(module);
+  msg += " ";
+  msg += String(hue);
   Serial.println("sending: " + msg + " to /forest/led");
   client.publish("/forest/led", msg);
 }
@@ -139,5 +142,9 @@ void onMessage(String &topic, String &payload)
   if (topic == "/forest/time")
   {
     cycle = payload.toInt();
+  }
+  else if (topic == "/forest/total")
+  {
+    totalModules = payload.toInt();
   }
 }
