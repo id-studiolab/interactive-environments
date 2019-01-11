@@ -1,16 +1,19 @@
 #include "ForestController.h"
 
-ForestController::ForestController(int identifier, int lPerStrip)
+ForestController::ForestController(int identifier, const int lPerStrip)
 {
     id = identifier;
-    amountLeds = lPerStrip;
-    FastLED.addLeds<NEOPIXEL, LEDPIN>(strip, lPerStrip);
+    this->amountLeds = lPerStrip;
+    FastLED.addLeds<NEOPIXEL, LEDPIN>(strip, amountLeds);
     setLED(lPerStrip, minBrightness, 0);
     FastLED.show();
+    // strip[6].setRGB(0, 0, 0);
 
     pinMode(MOISTURE_PIN, INPUT);
+    amountLeds = lPerStrip;
 
     Serial.println("init completed");
+    Serial.println(amountLeds);
 }
 
 void ForestController::setLED(int amount, int brightness, double hue)
@@ -36,6 +39,7 @@ void ForestController::setCycleTime(int newCycle)
 
 int ForestController::getAmountOfLeds()
 {
+    Serial.println("amountLeds in method = " + String(amountLeds));
     if (!moistureOn)
     {
         return amountLeds;
@@ -43,7 +47,12 @@ int ForestController::getAmountOfLeds()
     int value = analogRead(MOISTURE_PIN);
     int amount = map(value, 0, 500, 2, amountLeds);
 
-    return constrain(amount, 2, amountLeds);
+    if (amount < 2)
+        amount = 2;
+    if (amount > amountLeds)
+        amount = amountLeds;
+    Serial.println("amountLeds in method = " + String(amountLeds));
+    return amount;
 }
 
 void ForestController::enableMoisture(bool enable)
@@ -53,7 +62,7 @@ void ForestController::enableMoisture(bool enable)
 
 void ForestController::loop()
 {
-
+    Serial.println(this->amountLeds);
     if (millis() - brightnessTimer >= brightnessInterval)
     {
         brightnessTimer = millis();
@@ -74,24 +83,18 @@ void ForestController::loop()
         {
             currentHue = fmod(currentHue + hueIncrease + 360.0, 360.0);
         }
-
         setLED(getAmountOfLeds(), activatedBrightness, currentHue);
 
         FastLED.show();
     }
 }
 
-void ForestController::startLED()
+void ForestController::startLED(double hue)
 {
-    hueIncrease = 2.0 * calculateHsvIncrease(currentHue, nextHue, brightnessInterval, timerInterval);
-    targetBrightness = maxBrightness;
-    targetHue = nextHue;
-}
-
-void ForestController::setHue(double hue)
-{
-    if (abs(hue - nextHue) > 5)
+    if (abs(hue - targetHue) > 5)
     {
-        nextHue = hue;
+        hueIncrease = 2.0 * calculateHsvIncrease(currentHue, hue, brightnessInterval, timerInterval);
+        targetBrightness = maxBrightness;
+        targetHue = hue;
     }
 }

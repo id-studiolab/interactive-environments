@@ -1,11 +1,6 @@
 #include <Arduino.h>
 
 #include <FastLED.h>
-#include <math.h>
-
-#include <stdexcept>
-#include <vector>
-#include <cstring>
 
 #ifndef FORESTCONTROLLER_H
 #define FORESTCONTROLLER_H
@@ -26,8 +21,7 @@ class ForestController
   public:
     ForestController(int id, int amtLeds);
     ~ForestController();
-    void setHue(double hue);
-    void startLED();
+    void startLED(double hue);
     void loop();
     void setLED(int amount, int brightness, double hue);
     void setCycleTime(int newCycle);
@@ -38,11 +32,6 @@ class ForestController
     void onMessage(String &topic, String &payload);
 
     const int totalStrips = 10;
-    int stripOffset;
-    int ownStrips;
-
-    unsigned long timer;
-    unsigned long wifiTimer;
     unsigned long brightnessTimer;
 
     int id;
@@ -52,15 +41,14 @@ class ForestController
     int targetBrightness = maxBrightness;
     const unsigned int brightnessInterval = 110;
 
-    double nextHue = 280.0;
-    double targetHue = nextHue;
+    double targetHue = 280.0;
     double hueIncrease;
     double currentHue = 120.0;
     int cycle = CYCLE;
     int timerInterval = cycle / totalStrips;
 
     CRGB strip[6];
-    int amountLeds;
+    int amountLeds = 6;
     bool moistureOn = true;
 
     double calculateIncrease(double a, double b, double updateInterval, double time, bool round)
