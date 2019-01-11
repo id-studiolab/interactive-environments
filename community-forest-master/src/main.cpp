@@ -13,7 +13,6 @@ MQTTClient client;
 void connect();
 void onMessage(String &topic, String &payload);
 double getNewHue(double current);
-void sendHue();
 void setHue();
 void sendLED(int module, double brightnessIncrease, double hueIncrease, double hue);
 
@@ -102,14 +101,6 @@ double getNewHue(double current)
 void setHue()
 {
   currentHue = getNewHue(currentHue);
-  if (client.connected())
-  {
-    sendHue();
-  }
-  else
-  {
-    hueSend.attach(10, sendHue);
-  }
 }
 
 void sendLED(int module, double brightnessIncrease, double hueIncrease, double hue)
@@ -119,20 +110,6 @@ void sendLED(int module, double brightnessIncrease, double hueIncrease, double h
   msg += String(hue);
   Serial.println("sending: " + msg + " to /forest/led");
   client.publish("/forest/led", msg);
-}
-
-void sendHue()
-{
-  if (client.connected())
-  {
-    hueSend.detach();
-    Serial.println("sending " + String(currentHue) + ' ' + "to forest/hue");
-    client.publish("forest/hue", String(currentHue));
-  }
-  else
-  {
-    connect();
-  }
 }
 
 void onMessage(String &topic, String &payload)

@@ -27,7 +27,6 @@ void setup()
     client.connect(String(id).c_str(), MQTT_USERNAME, MQTT_PASSWORD);
     client.subscribe("/forest/time");
     client.subscribe("/forest/led");
-    client.subscribe("/forest/hue");
     client.subscribe("/forest/moisture");
     connect();
     Serial.println("Setup Done");
@@ -63,7 +62,6 @@ void connect()
         client.connect(String(id).c_str(), MQTT_USERNAME, MQTT_PASSWORD);
         client.subscribe("/forest/time");
         client.subscribe("/forest/led");
-        client.subscribe("/forest/hue");
         client.subscribe("/forest/moisture");
 
         if (client.connected())
