@@ -108,6 +108,8 @@ void sendLED(int module, double brightnessIncrease, double hueIncrease, double h
   String msg = String(module);
   msg += " ";
   msg += String(hue);
+  msg += " ";
+  msg += String(timerInterval());
   Serial.println("sending: " + msg + " to /forest/led");
   client.publish("/forest/led", msg);
 }

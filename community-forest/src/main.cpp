@@ -25,7 +25,6 @@ void setup()
     client.onMessage(onMessage);
     delay(2000);
     client.connect(String(id).c_str(), MQTT_USERNAME, MQTT_PASSWORD);
-    client.subscribe("/forest/time");
     client.subscribe("/forest/led");
     client.subscribe("/forest/moisture");
     connect();
@@ -60,7 +59,6 @@ void connect()
 
         controller->setLED(leds, 255, 240);
         client.connect(String(id).c_str(), MQTT_USERNAME, MQTT_PASSWORD);
-        client.subscribe("/forest/time");
         client.subscribe("/forest/led");
         client.subscribe("/forest/moisture");
 
@@ -77,18 +75,16 @@ void onMessage(String &topic, String &payload)
 
     if (topic == "/forest/led")
     {
-        int id = splitString(payload, ' ', 0).toInt();
         if (splitString(payload, ' ', 0).toInt() == id)
         {
             double hue = splitString(payload, ' ', 1).toFloat();
+            double timeTaken = splitString(payload, ' ', 2).toFloat();
             Serial.print("starting led with new hue ");
-            Serial.println(hue);
-            controller->startLED(hue);
+            Serial.print(hue);
+            Serial.print(" and time ");
+            Serial.println(timeTaken);
+            controller->startLED(hue, timeTaken);
         }
-    }
-    else if (topic == "/forest/time")
-    {
-        controller->setCycleTime(payload.toInt());
     }
     else if (topic == "/forest/moisture")
     {

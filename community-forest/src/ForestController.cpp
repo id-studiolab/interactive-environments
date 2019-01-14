@@ -32,11 +32,6 @@ void ForestController::setLED(int amount, int brightness, double hue)
     }
 }
 
-void ForestController::setCycleTime(int newCycle)
-{
-    cycle = newCycle;
-}
-
 int ForestController::getAmountOfLeds()
 {
     if (!moistureOn)
@@ -87,10 +82,11 @@ void ForestController::loop()
     }
 }
 
-void ForestController::startLED(double hue)
+void ForestController::startLED(double hue, double timeTaken)
 {
     if (abs(hue - targetHue) > 5)
     {
+        timerInterval = timeTaken;
         hueIncrease = 2.0 * calculateHsvIncrease(currentHue, hue, brightnessInterval, timerInterval);
         targetBrightness = maxBrightness;
         targetHue = hue;
