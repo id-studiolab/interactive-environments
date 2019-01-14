@@ -21,10 +21,9 @@ class ForestController
   public:
     ForestController(int id, int amtLeds);
     ~ForestController();
-    void startLED(double hue);
+    void startLED(double hue, double timeTaken);
     void loop();
     void setLED(int amount, int brightness, double hue);
-    void setCycleTime(int newCycle);
     void enableMoisture(bool enable);
 
   protected:
@@ -44,8 +43,7 @@ class ForestController
     double targetHue = 280.0;
     double hueIncrease;
     double currentHue = 120.0;
-    int cycle = CYCLE;
-    int timerInterval = cycle / totalStrips;
+    int timerInterval = 3000;
 
     CRGB strip[6];
     int amountLeds = 6;

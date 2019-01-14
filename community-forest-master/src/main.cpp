@@ -4,7 +4,7 @@
 #include <WiFiClientSecure.h>
 #include <Ticker.h>
 
-#define MQTT_NAME "Master"
+#define MQTT_NAME "ForestMaster"
 #define MQTT_USERNAME "a0e78aaf"
 #define MQTT_PASSWORD "2626bb47aaf15e04"
 
@@ -38,7 +38,7 @@ void setup()
   client.subscribe("/forest/time");
   client.subscribe("/forest/total");
   connect();
-  delay(10000);
+  delay(5000);
   Serial.println("Setup Done");
 }
 
@@ -108,6 +108,8 @@ void sendLED(int module, double brightnessIncrease, double hueIncrease, double h
   String msg = String(module);
   msg += " ";
   msg += String(hue);
+  msg += " ";
+  msg += String(timerInterval());
   Serial.println("sending: " + msg + " to /forest/led");
   client.publish("/forest/led", msg);
 }
