@@ -77,10 +77,12 @@ void onMessage(String &topic, String &payload)
 
     if (topic == "/forest/led")
     {
+        int id = splitString(payload, ' ', 0).toInt();
         if (splitString(payload, ' ', 0).toInt() == id)
         {
-            Serial.println("starting led");
             double hue = splitString(payload, ' ', 1).toFloat();
+            Serial.print("starting led with new hue ");
+            Serial.println(hue);
             controller->startLED(hue);
         }
     }
