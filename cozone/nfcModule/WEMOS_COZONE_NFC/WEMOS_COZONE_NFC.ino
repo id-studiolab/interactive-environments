@@ -37,6 +37,9 @@ void setup() {
   delay(1000);
 }
 
+char temp = '0';
+int cur = 0;
+
 void loop() {
   client.loop();
   delay(10);
@@ -47,12 +50,14 @@ void loop() {
   }
   
   if (mySerial.available()) {
-    String data = mySerial.readString();
-    data.remove(1);
-    Serial.println("I received " + data);
-
-    if (data == "0" or data == "1" or data == "2" or data == "3" or data == "4" or data == "5" or data == "6") {
-      client.publish("/cozone/busyness", data);
+    char c = mySerial.read();
+    if (c == '\n' or c == '\r') {
+      if (millis() - cur > 1000) {
+        client.publish("/cozone/busyness", String(temp));
+        cur = millis();
+      }
+    } else {
+      temp = c;
     }
   }
 }
