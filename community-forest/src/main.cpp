@@ -4,8 +4,8 @@
 #include <ESP8266WiFi.h>
 #include <WiFiClientSecure.h>
 
-const int id = 9;
-const int leds = 6;
+const int id = CONTROLLER_ID;
+const int leds = AMOUNT_LEDS;
 
 ForestController *controller;
 WiFiClientSecure net;
@@ -25,7 +25,7 @@ void setup()
 {
     Serial.begin(115200);
     WiFi.begin(WIFI_SSID, WIFI_PASS);
-    controller = new ForestController(id, leds);
+    controller = new ForestController();
 
     client.begin("broker.shiftr.io", 8883, net);
     client.onMessage(onMessage);

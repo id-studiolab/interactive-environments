@@ -2,7 +2,6 @@
 #include <MQTT.h>
 #include <ESP8266WiFi.h>
 #include <WiFiClientSecure.h>
-#include <Ticker.h>
 
 #define MQTT_NAME "ForestMaster"
 #define MQTT_USERNAME "a0e78aaf"

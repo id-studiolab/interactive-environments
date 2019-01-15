@@ -2,6 +2,9 @@
 
 #include <FastLED.h>
 
+#define CONTROLLER_ID 9
+#define AMOUNT_LEDS 7
+
 #ifndef FORESTCONTROLLER_H
 #define FORESTCONTROLLER_H
 // #define WIFI_SSID "blabla"
@@ -19,7 +22,7 @@
 class ForestController
 {
   public:
-    ForestController(int id, int amtLeds);
+    ForestController();
     ~ForestController();
     void startLED(double hue, double timeTaken);
     void loop();
@@ -46,8 +49,8 @@ class ForestController
     double currentHue = 120.0;
     int timerInterval = 3000;
 
-    CRGB strip[6];
-    int amountLeds = 6;
+    CRGB strip[AMOUNT_LEDS];
+    int amountLeds = AMOUNT_LEDS;
     bool moistureOn = true;
 
     double calculateIncrease(double a, double b, double updateInterval, double time, bool round)

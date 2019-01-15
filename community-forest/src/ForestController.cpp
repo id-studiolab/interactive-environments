@@ -1,16 +1,15 @@
 #include "ForestController.h"
 
-ForestController::ForestController(int identifier, const int lPerStrip)
+ForestController::ForestController()
 {
-    id = identifier;
-    this->amountLeds = lPerStrip;
+    id = CONTROLLER_ID;
+    this->amountLeds = AMOUNT_LEDS;
     FastLED.addLeds<NEOPIXEL, LEDPIN>(strip, amountLeds);
-    setLED(lPerStrip, minBrightness, 0);
+    setLED(AMOUNT_LEDS, minBrightness, 0);
     FastLED.show();
     // strip[6].setRGB(0, 0, 0);
 
     pinMode(MOISTURE_PIN, INPUT);
-    amountLeds = lPerStrip;
 
     Serial.println("init completed");
     Serial.println(amountLeds);
@@ -45,6 +44,8 @@ int ForestController::getAmountOfLeds()
         amount = 2;
     if (amount > amountLeds)
         amount = amountLeds;
+
+    Serial.println("amount = " + String(amount));
     return amount;
 }
 
