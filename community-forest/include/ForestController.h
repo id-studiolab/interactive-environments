@@ -25,6 +25,7 @@ class ForestController
     void loop();
     void setLED(int amount, int brightness, double hue);
     void enableMoisture(bool enable);
+    int getMoistureSensorValue();
 
   protected:
     int getAmountOfLeds();

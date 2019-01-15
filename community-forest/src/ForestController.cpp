@@ -38,7 +38,7 @@ int ForestController::getAmountOfLeds()
     {
         return amountLeds;
     }
-    int value = analogRead(MOISTURE_PIN);
+    int value = getMoistureSensorValue();
     int amount = map(value, 0, 500, 2, amountLeds);
 
     if (amount < 2)
@@ -46,6 +46,11 @@ int ForestController::getAmountOfLeds()
     if (amount > amountLeds)
         amount = amountLeds;
     return amount;
+}
+
+int ForestController::getMoistureSensorValue()
+{
+    return analogRead(MOISTURE_PIN);
 }
 
 void ForestController::enableMoisture(bool enable)

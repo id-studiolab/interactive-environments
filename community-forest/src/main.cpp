@@ -14,6 +14,12 @@ MQTTClient client;
 void connect();
 void onMessage(String &topic, String &payload);
 String splitString(String data, char separator, int index);
+void sendMoistureState(bool moistured);
+
+bool plantWatered = false;
+unsigned long plantWateredTimer = 0;
+unsigned long plantWateredInterval = 1000;
+const int waterThreshold = 400;
 
 void setup()
 {
@@ -24,7 +30,7 @@ void setup()
     client.begin("broker.shiftr.io", 8883, net);
     client.onMessage(onMessage);
     delay(2000);
-    client.connect(String(id).c_str(), MQTT_USERNAME, MQTT_PASSWORD);
+    client.connect(("Forest" + String(id)).c_str(), MQTT_USERNAME, MQTT_PASSWORD);
     client.subscribe("/forest/led");
     client.subscribe("/forest/moisture");
     connect();
@@ -42,6 +48,21 @@ void loop()
         connect();
     }
     controller->loop();
+
+    if (millis() - plantWateredTimer >= plantWateredInterval)
+    {
+        int moistureValue = controller->getMoistureSensorValue();
+        if (moistureValue < waterThreshold && plantWatered)
+        {
+            plantWatered = false;
+            sendMoistureState(false);
+        }
+        else if (moistureValue > waterThreshold && !plantWatered)
+        {
+            plantWatered = true;
+            sendMoistureState(true);
+        }
+    }
     delay(10);
 }
 
@@ -97,6 +118,15 @@ void onMessage(String &topic, String &payload)
             controller->enableMoisture(true);
         }
     }
+}
+
+void sendMoistureState(bool moistured)
+{
+    if (moistured)
+    {
+        client.publish("forest/watered", String(1));
+    }
+    client.publish("forest/" + String(id) + "/humidity", moistured ? "1" : "0");
 }
 
 String splitString(String data, char separator, int index)
