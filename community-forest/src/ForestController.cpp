@@ -1,16 +1,18 @@
 #include "ForestController.h"
 
-ForestController::ForestController(int identifier, int lPerStrip)
+ForestController::ForestController()
 {
-    id = identifier;
-    amountLeds = lPerStrip;
-    FastLED.addLeds<NEOPIXEL, LEDPIN>(strip, lPerStrip);
-    setLED(lPerStrip, minBrightness, 0);
+    id = CONTROLLER_ID;
+    this->amountLeds = AMOUNT_LEDS;
+    FastLED.addLeds<NEOPIXEL, LEDPIN>(strip, amountLeds);
+    setLED(AMOUNT_LEDS, minBrightness, 0);
     FastLED.show();
+    // strip[6].setRGB(0, 0, 0);
 
     pinMode(MOISTURE_PIN, INPUT);
 
     Serial.println("init completed");
+    Serial.println(amountLeds);
 }
 
 void ForestController::setLED(int amount, int brightness, double hue)
@@ -29,21 +31,27 @@ void ForestController::setLED(int amount, int brightness, double hue)
     }
 }
 
-void ForestController::setCycleTime(int newCycle)
-{
-    cycle = newCycle;
-}
-
 int ForestController::getAmountOfLeds()
 {
     if (!moistureOn)
     {
         return amountLeds;
     }
-    int value = analogRead(MOISTURE_PIN);
+    int value = getMoistureSensorValue();
     int amount = map(value, 0, 500, 2, amountLeds);
 
-    return constrain(amount, 2, amountLeds);
+    if (amount < 2)
+        amount = 2;
+    if (amount > amountLeds)
+        amount = amountLeds;
+
+    Serial.println("amount = " + String(amount));
+    return amount;
+}
+
+int ForestController::getMoistureSensorValue()
+{
+    return analogRead(MOISTURE_PIN);
 }
 
 void ForestController::enableMoisture(bool enable)
@@ -53,7 +61,7 @@ void ForestController::enableMoisture(bool enable)
 
 void ForestController::loop()
 {
-
+    // Serial.println(this->amountLeds);
     if (millis() - brightnessTimer >= brightnessInterval)
     {
         brightnessTimer = millis();
@@ -74,24 +82,19 @@ void ForestController::loop()
         {
             currentHue = fmod(currentHue + hueIncrease + 360.0, 360.0);
         }
-
         setLED(getAmountOfLeds(), activatedBrightness, currentHue);
 
         FastLED.show();
     }
 }
 
-void ForestController::startLED()
+void ForestController::startLED(double hue, double timeTaken)
 {
-    hueIncrease = 2.0 * calculateHsvIncrease(currentHue, nextHue, brightnessInterval, timerInterval);
-    targetBrightness = maxBrightness;
-    targetHue = nextHue;
-}
-
-void ForestController::setHue(double hue)
-{
-    if (abs(hue - nextHue) > 5)
+    if (abs(hue - targetHue) > 5)
     {
-        nextHue = hue;
+        timerInterval = timeTaken;
+        hueIncrease = 2.0 * calculateHsvIncrease(currentHue, hue, brightnessInterval, timerInterval);
+        targetBrightness = maxBrightness;
+        targetHue = hue;
     }
 }
