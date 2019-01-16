@@ -179,11 +179,17 @@ void setup(){
 
 void loop()
 {
+  bool foo = 0;
   currentMillis = millis();
   if(isCharging()){
+    foo = 1;
     chargeLoop();
   }
   else{
+    if (foo){
+      client.publish("pickup", "hello");
+    }
+    foo = 0;
     timerLoop();
   }
   FastLED.show();
@@ -372,6 +378,9 @@ void connect()
 void messageReceived(String &topic, String &payload)
 {
   Serial.println("incoming: " + topic + " - " + payload);
+  if(topic=="pickup"){
+    pickupNotification();
+  }
 }
 
 
@@ -464,6 +473,21 @@ void breakAlarm()
   }
   breakConstrain = timerMax/6;
 }
+
+void pickupNotification(){
+  for(int j=0; j<5; j++){
+    leds[5] = CHSV(green, 255, 255);
+    leds[6] = CHSV(green, 255, 255);
+    FastLED.show();
+    delay(100);
+    leds[5] = CHSV(0, 0, 0);
+    leds[6] = CHSV(0, 0, 0);
+    FastLED.show();
+    delay(100);
+  }
+}
+
+
 
 //draws the passed number (max 2 digits) on the led matrix display
 //uses the DIGITS array specified at the top
