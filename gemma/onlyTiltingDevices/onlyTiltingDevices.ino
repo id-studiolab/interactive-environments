@@ -1,6 +1,6 @@
 //nescessary for all arduino projects
 #include <Wire.h>
-#include <ADXL345.h>
+#include "MMA7660.h"
 #include <FastLED.h>
 #include <ESP8266WiFi.h>
 #include <MQTT.h>
@@ -12,8 +12,11 @@ char id[] = "2";
 
 
 //wifi credentials
-char ssid[] = "iot-net";
-char pass[] = "interactive";
+//char ssid[] = "iot-net";
+//char pass[] = "interactive";
+char ssid[] = "Bjarke";
+char pass[] = "testtest";
+
 
 //mqtt credentials
 char mqtt_server[] = "m23.cloudmqtt.com";
@@ -39,8 +42,6 @@ int green = map(123, 0, 360, 0, 255);
 int yellow = map(60, 0, 360, 0, 255);
 int red = map(0, 0, 360, 0, 255);
 
-ADXL345 adxl; //variable adxl is an instance of the ADXL345 library
-
 //time stuff
 float scaleFactor = 60;
 unsigned long timerMax = (60/scaleFactor) * 60 * 1000L;
@@ -55,9 +56,9 @@ bool breakTimerOn = true;
 bool taskTimerOn = false;
 
 //accelerometer stuff
-double xyz[3];
-double ax, ay, az, lastAz;
-double totalAccel;
+MMA7660 accelemeter;
+float ax,ay,az;
+float totalAccel;
 
 //selected timer
 bool taskSelected = false;
@@ -68,7 +69,7 @@ bool breakHighlight = false;
 
 
 //charging
-#define THRESHOLD_CHARGING      4.35
+#define THRESHOLD_CHARGING      4.0 //3.7
 
 //digits for matrix display
 static const uint8_t PROGMEM DIGITS[][8] = {
@@ -152,13 +153,79 @@ static const uint8_t PROGMEM DIGITS[][8] = {
      B11100000,
      B00000000,
      B00000000}};
+const byte CHARGING_IMAGES[][8] = {
+{
+  B00111100,
+  B00100100,
+  B01100110,
+  B01000010,
+  B01000010,
+  B01000010,
+  B01000010,
+  B01111110
+},{
+  B00111100,
+  B00100100,
+  B01100110,
+  B01000010,
+  B01000010,
+  B01000010,
+  B01111110,
+  B01111110
+},{
+  B00111100,
+  B00100100,
+  B01100110,
+  B01000010,
+  B01000010,
+  B01111110,
+  B01111110,
+  B01111110
+},{
+  B00111100,
+  B00100100,
+  B01100110,
+  B01000010,
+  B01111110,
+  B01111110,
+  B01111110,
+  B01111110
+},{
+  B00111100,
+  B00100100,
+  B01100110,
+  B01111110,
+  B01111110,
+  B01111110,
+  B01111110,
+  B01111110
+},{
+  B00111100,
+  B00100100,
+  B01111110,
+  B01111110,
+  B01111110,
+  B01111110,
+  B01111110,
+  B01111110
+},{
+  B00111100,
+  B00111100,
+  B01111110,
+  B01111110,
+  B01111110,
+  B01111110,
+  B01111110,
+  B01111110
+}};
+const int CHARGING_LEN = sizeof(CHARGING_IMAGES)/8;
 
 
 void setup(){
   Wire.begin();
   Serial.begin(9600);
 
-  adxl.powerOn();
+  accelemeter.init(); 
   FastLED.addLeds<NEOPIXEL, LED_PIN>(leds, NUM_LEDS);
   matrix.begin(0x70); // pass in the address
   
@@ -202,6 +269,17 @@ void chargeLoop()
 {
     for(int i=0; i<NUM_LEDS; i++){
       leds[i] = CHSV(yellow, 255, 80);  
+    }
+
+    static unsigned long lastMatrix = 0;
+    if (currentMillis-lastMatrix>500){
+      static int index = 0;
+      matrix.clear();
+      matrix.drawBitmap(0, 0, CHARGING_IMAGES[index], 8, 8, LED_ON);
+      matrix.writeDisplay();
+      index++;
+      if(index>=CHARGING_LEN)
+          index = 0;
     }
 
     // publish a message roughly every ten seconds.
@@ -341,10 +419,13 @@ void messageReceived(String &topic, String &payload)
 //updates global values with data from accelerometer
 void updateAcc()
 {
-  adxl.getAcceleration(xyz);
-  ax = xyz[0];
-  ay = xyz[1];
-  az = xyz[2];
+  float uax, uay, uaz;
+  accelemeter.getAcceleration(&uax,&uay,&uaz);
+  ax = uaz;
+  ay = uax;
+  az = uay;
+
+  
   totalAccel = sqrt(ax * ax + ay * ay + az * az);
   Serial.print(ax);
   Serial.print(", ");
@@ -470,11 +551,9 @@ void drawNumbers(int number)
 bool isCharging()
 {
   int sensorValue = analogRead(CHARGE_PIN);
-  Serial.print(sensorValue);
-  Serial.print(", ");
   // Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 5V):
   float voltage = sensorValue * (5.0 / 1023.0);
-  Serial.println(voltage);
+  //Serial.println(voltage);
   // print out the value you read:
   //Serial.println(voltage);
   if (voltage > THRESHOLD_CHARGING)

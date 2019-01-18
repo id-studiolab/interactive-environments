@@ -1,16 +1,12 @@
-//nescessary for c++ project
-//#include <Arduino.h>
-//#include <main.h>
-
 //nescessary for all arduino projects
 #include <Wire.h>
 #include <ADXL345.h>
 #include <FastLED.h>
-#include <WiFi.h>
+#include <ESP8266WiFi.h>
 #include <MQTT.h>
 #include <Adafruit_GFX.h>
-#include "Adafruit_MPR121.h"
 #include <Adafruit_LEDBackpack.h>
+#include "Adafruit_MPR121.h"
 
 #ifndef _BV
 #define _BV(bit) (1 << (bit)) 
@@ -28,7 +24,7 @@ WiFiClient net;
 MQTTClient client;
 
 //pin connections
-#define LED_PIN 5
+#define LED_PIN 12
 #define NUM_LEDS 12
 #define CHARGE_PIN A0
 
@@ -78,7 +74,7 @@ int lastTouch = 0;
 int touch = 0;
 
 //charging
-#define THRESHOLD_CHARGING      1.45
+#define THRESHOLD_CHARGING      3.5
 
 //digits for matrix display
 static const uint8_t PROGMEM DIGITS[][8] = {
@@ -232,7 +228,7 @@ const int CHARGING_LEN = sizeof(CHARGING_IMAGES)/8;
 void setup(){
   Wire.begin();
   Serial.begin(9600);
-  
+
   WiFi.begin(ssid, pass);
   client.begin("192.168.1.23", net);
   client.onMessage(messageReceived);
@@ -258,12 +254,13 @@ void loop()
   bool foo = 0;
   currentMillis = millis();
   if(isCharging()){
+
     foo = 1;
     chargeLoop();
   }
   else{
     if (foo){
-      client.publish("pickup", "hello");
+      //client.publish("pickup", "hello");
     }
     foo = 0;
     timerLoop();
@@ -285,13 +282,15 @@ void loop()
 void chargeLoop()
 {
     for(int i=0; i<NUM_LEDS; i++){
-      leds[i] = CHSV(yellow, 255, 80);  
+      leds[i] = CHSV(yellow, 255, 80);
     }
     
     static unsigned long lastMatrix = 0;
     if (currentMillis-lastMatrix>500){
+      lastMatrix = currentMillis;
       static int index = 0;
       matrix.clear();
+        matrix.setRotation(2);
       matrix.drawBitmap(0, 0, CHARGING_IMAGES[index], 8, 8, LED_ON);
       matrix.writeDisplay();
       index++;
@@ -326,26 +325,26 @@ void timerLoop()
   //update data from accelerometer
   updateAcc();
 
-  // publish a message roughly every ten seconds.
-  if (currentMillis - lastMqtt  > 10*1000)
-  {
-    lastMqtt = currentMillis;
+// publish a message roughly every ten seconds.
+if (currentMillis - lastMqtt  > 10*1000)
+{
+  lastMqtt = currentMillis;
 
-    char str[] = "/gemma/availability/";
-    strcat(str, id);
-    if(ax<=0){
-      client.publish(str, "social");
-    }
-    if(ax>0){
-      client.publish(str, "focused");
-    }
-
+  char str[] = "/gemma/availability/";
+  strcat(str, id);
+  if(ax<=0){
+    client.publish(str, "social");
   }
+  if(ax>0){
+    client.publish(str, "focused");
+  }
+
+}
 
 
   //check touch surface
   touch = touchCheck();
-  Serial.println(touch);
+  //Serial.println(touch);
 
   if (az< 0-selectionThreshold){
     taskSelected = true;
@@ -368,16 +367,16 @@ void timerLoop()
   //set timers based on user input
   if (touch!=lastTouch && touch>0){
     if(taskSelected){
-      if(ay>0)
-        taskTimer = map(touch, 7, 1, 0, timerMax);
+      if(ay<0)
+        taskTimer = map(touch, 10, 1, 0, timerMax);
       else
-        taskTimer = map(touch, 0, 6, 0, timerMax);
+        taskTimer = map(touch, 0, 9, 0, timerMax);
       taskTimerOn = true;
     } else if(breakSelected){
-      if(ay>0)
-        breakTimer = map(touch, 7, 1, 0, timerMax);
+      if(ay<0)
+        breakTimer = map(touch, 10, 1, 0, timerMax);
       else
-        breakTimer = map(touch, 0, 6, 0, timerMax);
+        breakTimer = map(touch, 0, 9, 0, timerMax);
       breakTimerOn = true;
     }
   } else {
@@ -464,10 +463,15 @@ void messageReceived(String &topic, String &payload)
 void updateAcc()
 {
   adxl.getAcceleration(xyz);
-  ax = xyz[0];
-  ay = xyz[1];
-  az = xyz[2];
+  ax = 0 - xyz[2];
+  ay = 0 - xyz[0];
+  az = 0 - xyz[1];
   totalAccel = sqrt(ax * ax + ay * ay + az * az);
+    Serial.print(ax);
+  Serial.print(", ");
+  Serial.print(ay);
+  Serial.print(", ");
+  Serial.println(az);
 }
 
 //sets leds according to passed timer
@@ -522,7 +526,7 @@ void breakAlarm()
 {
   char str[] = "/gemmaa/break/";
   strcat(str, id);
-  client.publish(str, "break");
+  //client.publish(str, "break");
   delay(10);
   int value = 50;
   bool up = true;
@@ -591,7 +595,6 @@ bool isCharging()
   int sensorValue = analogRead(CHARGE_PIN);
   // Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 5V):
   float voltage = sensorValue * (5.0 / 1023.0);
-  // print out the value you read:
   //Serial.println(voltage);
   if (voltage > THRESHOLD_CHARGING)
     return true;
@@ -606,19 +609,34 @@ int touchCheck(){
   static uint16_t lasttouched = 0;
   static uint16_t currtouched = 0;
   currtouched = cap.touched();
-  
-  for (uint8_t i=0; i<12; i++) {
-    // it if *is* touched and *wasnt* touched before, alert!
-    if ((currtouched & _BV(i)) && !(lasttouched & _BV(i)) ) {
-      return i;
-    }
-//    // if it *was* touched and now *isnt*, alert!
-//    if (!(currtouched & _BV(i)) && (lasttouched & _BV(i)) ) {
-//      Serial.print(i); Serial.println(" released");
-//    }
-  }
+  Serial.println(currtouched);
+
+  if(currtouched==0){
+    return 0;
+  } else if(currtouched==1){
+    return 1;
+  } else if(currtouched==3){
+    return 2;
+  } else if(currtouched==2){
+    return 3;
+  } else if(currtouched==6){
+    return 4;
+  } else if(currtouched==4){
+    return 5;
+  } else if(currtouched==12){
+    return 6;
+  } else if(currtouched==8){
+    return 7;
+  } else if(currtouched==24){
+    return 8;
+  } else if(currtouched==16){
+    return 7;
+  } else if(currtouched==48){
+    return 8;
+  } else if(currtouched==32){
+    return 9;
+  } 
 
   // reset our state
   lasttouched = currtouched;
-  return 0;
 }
