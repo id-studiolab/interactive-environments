@@ -7,8 +7,11 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_LEDBackpack.h>
 
-//id numbers so we can distinguish between the Gemmas 
+//id numbers so we can distinguish between the Gemmas
 char id[] = "2";
+
+//charging
+#define THRESHOLD_CHARGING      4.0 //3.7
 
 
 //wifi credentials
@@ -17,11 +20,10 @@ char id[] = "2";
 char ssid[] = "Bjarke";
 char pass[] = "testtest";
 
-
 //mqtt credentials
 char mqtt_server[] = "m23.cloudmqtt.com";
 char mqtt_username[] = "ccsycwwb";
-char mqtt_password[] = "iEChr1Rbiax_"; 
+char mqtt_password[] = "iEChr1Rbiax_";
 int mqtt_port = 13154;
 
 WiFiClient net;
@@ -43,7 +45,7 @@ int yellow = map(60, 0, 360, 0, 255);
 int red = map(0, 0, 360, 0, 255);
 
 //time stuff
-float scaleFactor = 60;
+float scaleFactor = 1;
 unsigned long timerMax = (60/scaleFactor) * 60 * 1000L;
 long breakTimer = timerMax/2;
 long taskTimer = timerMax/3;
@@ -225,10 +227,10 @@ void setup(){
   Wire.begin();
   Serial.begin(9600);
 
-  accelemeter.init(); 
+  accelemeter.init();
   FastLED.addLeds<NEOPIXEL, LED_PIN>(leds, NUM_LEDS);
   matrix.begin(0x70); // pass in the address
-  
+
   WiFi.begin(ssid, pass);
   client.begin(mqtt_server, mqtt_port, net);
   //client.begin(mqtt_server, net);
@@ -260,21 +262,23 @@ void loop()
   {
     connect();
   }
-  
- 
+
+
   lastMillis = currentMillis;
 }
 
 void chargeLoop()
 {
     for(int i=0; i<NUM_LEDS; i++){
-      leds[i] = CHSV(yellow, 255, 80);  
+      leds[i] = CHSV(yellow, 255, 80);
     }
 
     static unsigned long lastMatrix = 0;
     if (currentMillis-lastMatrix>500){
+      lastMatrix = currentMillis;
       static int index = 0;
       matrix.clear();
+      matrix.setRotation(2);
       matrix.drawBitmap(0, 0, CHARGING_IMAGES[index], 8, 8, LED_ON);
       matrix.writeDisplay();
       index++;
@@ -284,12 +288,12 @@ void chargeLoop()
 
     // publish a message roughly every ten seconds.
     if (currentMillis - lastMqtt  > 10*1000)
-    { 
+    {
       lastMqtt = currentMillis;
       char str[] = "/gemma/charging/";
       strcat(str, id);
       client.publish(str, "charging");
-      }
+    }
 
   //reset timer variables
   breakConstrain=timerMax;
@@ -297,7 +301,7 @@ void chargeLoop()
   taskTimer = 0;
   breakTimerOn = true;
   taskTimerOn = false;
-  
+
 }
 
 void timerLoop()
@@ -337,6 +341,8 @@ void timerLoop()
     breakHighlight = true;
   }
   else {
+    taskSelected = false;
+    breakSelected = false;
     taskHighlight = false;
     breakHighlight = false;
   }
@@ -392,7 +398,7 @@ void connect()
   }
   Serial.print("\nwifi connected!");
   char userID[] = "Gemma";
-  strcat(userID, id);  
+  strcat(userID, id);
   Serial.print("\nconnecting...");
   while (!client.connect(userID, mqtt_username, mqtt_password))
   {
@@ -425,7 +431,7 @@ void updateAcc()
   ay = uax;
   az = uay;
 
-  
+
   totalAccel = sqrt(ax * ax + ay * ay + az * az);
   Serial.print(ax);
   Serial.print(", ");
@@ -437,7 +443,7 @@ void updateAcc()
 //sets leds according to passed timer
 //you need to pass the leds you want to control and the hue and saturatiion - value is determined by the timer
 //highlight will change the scheme to be slightly lighter. used to indicate to the user that they have selected a side
-//the 'up' parameter specifies if the leds should be filing up towards higher or lower index 
+//the 'up' parameter specifies if the leds should be filing up towards higher or lower index
 void setLedColor(int firstLed, int num_leds, long timer, int hue, int saturation, bool highlight, bool up)
 {
   int valueMin = highlight ? 55 : 0;
