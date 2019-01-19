@@ -7,6 +7,8 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_LEDBackpack.h>
 #include "Adafruit_MPR121.h"
+#include <time.h>
+#include <TimeLib.h>
 
 #ifndef _BV
 #define _BV(bit) (1 << (bit))
@@ -16,13 +18,15 @@
 char id[] = "1";
 
 //charging
-#define THRESHOLD_CHARGING      6.5
+#define THRESHOLD_CHARGING      3.0
 
 //wifi credentials
 //char ssid[] = "iot-net";
 //char pass[] = "interactive";
 char ssid[] = "Bjarke";
 char pass[] = "testtest";
+int timezone = 1;
+int dst = 0;
 
 //mqtt credentials
 char mqtt_server[] = "m23.cloudmqtt.com";
@@ -54,8 +58,8 @@ ADXL345 adxl; //variable adxl is an instance of the ADXL345 library
 //time stuff
 float scaleFactor = 1;
 unsigned long timerMax = (60/scaleFactor) * 60 * 1000L;
-long breakTimer = timerMax/2;
-long taskTimer = timerMax/3;
+long breakTimer = timerMax;
+long taskTimer = 0;
 int breakTimerMinutes;
 unsigned long breakConstrain = timerMax;
 unsigned long lastMillis = 0;
@@ -247,19 +251,26 @@ void setup(){
   client.onMessage(messageReceived);
   connect();
 
+  configTime(timezone * 3600, dst*3600, "pool.ntp.org", "time.nist.gov");
+  Serial.println("\nWaiting for time");
+  while (!time(nullptr)) {
+    Serial.print(".");
+    delay(1000);
+  }
+
   if (!cap.begin(0x5B)) {
     Serial.println("MPR121 not found, check wiring?");
     while (1);
   }
   cap.writeRegister(MPR121_ECR, 0x0);
-  cap.setThresholds(8, 5);
+  cap.setThresholds(7, 4);
   cap.writeRegister(MPR121_ECR, 0x8F);
   Serial.println("MPR121 found!");
 }
 
 void loop()
 {
-  bool foo = 0;
+  static bool foo = 0;
   currentMillis = millis();
   if(isCharging()){
 
@@ -283,6 +294,13 @@ void loop()
     connect();
   }
 
+  //reset once a day
+  time_t t = time(nullptr);
+  int hourmin = hour(t)*100+minute(t);
+  Serial.println(hourmin);
+  if(hourmin == 2359){
+    WiFi.forceSleepBegin(); wdt_reset(); ESP.restart(); //while(1)wdt_reset();
+  }
 
   lastMillis = currentMillis;
 }
@@ -290,7 +308,7 @@ void loop()
 void chargeLoop()
 {
     for(int i=0; i<NUM_LEDS; i++){
-      leds[i] = CHSV(yellow, 255, 80);
+      leds[i] = CHSV(yellow, 255, 200);
     }
 
     static unsigned long lastMatrix = 0;
@@ -376,15 +394,15 @@ if (currentMillis - lastMqtt  > 10*1000)
   if (touch!=lastTouch && touch>0){
     if(taskSelected){
       if(ay<0)
-        taskTimer = map(touch, 10, 1, 0, timerMax);
+        taskTimer = map(touch, 7, 1, 0, timerMax);
       else
-        taskTimer = map(touch, 0, 9, 0, timerMax);
+        taskTimer = map(touch, 0, 6, 0, timerMax);
       taskTimerOn = true;
     } else if(breakSelected){
       if(ay<0)
-        breakTimer = map(touch, 10, 1, 0, timerMax);
+        breakTimer = map(touch, 7, 1, 0, timerMax);
       else
-        breakTimer = map(touch, 0, 9, 0, timerMax);
+        breakTimer = map(touch, 0, 6, 0, timerMax);
       breakTimerOn = true;
     }
   } else {
@@ -621,33 +639,16 @@ int touchCheck(){
   static uint16_t lasttouched = 0;
   static uint16_t currtouched = 0;
   currtouched = cap.touched();
-  Serial.println(currtouched);
+  //Serial.println(currtouched);
 
-  if(currtouched==0){
-    return 0;
-  } else if(currtouched==1){
-    return 1;
-  } else if(currtouched==3){
-    return 2;
-  } else if(currtouched==2){
-    return 3;
-  } else if(currtouched==6){
-    return 4;
-  } else if(currtouched==4){
-    return 5;
-  } else if(currtouched==12){
-    return 6;
-  } else if(currtouched==8){
-    return 7;
-  } else if(currtouched==24){
-    return 8;
-  } else if(currtouched==16){
-    return 7;
-  } else if(currtouched==48){
-    return 8;
-  } else if(currtouched==32){
-    return 9;
+  for (uint8_t i=0; i<12; i++) {
+    // it if *is* touched and *wasnt* touched before, alert!
+    if ((currtouched & _BV(i)) && !(lasttouched & _BV(i)) ) {
+      return i+1;
+    }
   }
+
+  return 0;
 
   // reset our state
   lasttouched = currtouched;

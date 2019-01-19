@@ -6,12 +6,14 @@
 #include <MQTT.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_LEDBackpack.h>
+#include <time.h>
+#include <TimeLib.h>
 
 //id numbers so we can distinguish between the Gemmas
 char id[] = "2";
 
 //charging
-#define THRESHOLD_CHARGING      4.0 //3.7
+#define THRESHOLD_CHARGING      3.9 //not actual voltage, just the read on pin a0
 
 
 //wifi credentials
@@ -19,6 +21,8 @@ char id[] = "2";
 //char pass[] = "interactive";
 char ssid[] = "Bjarke";
 char pass[] = "testtest";
+int timezone = 1;
+int dst = 0;
 
 //mqtt credentials
 char mqtt_server[] = "m23.cloudmqtt.com";
@@ -47,8 +51,8 @@ int red = map(0, 0, 360, 0, 255);
 //time stuff
 float scaleFactor = 1;
 unsigned long timerMax = (60/scaleFactor) * 60 * 1000L;
-long breakTimer = timerMax/2;
-long taskTimer = timerMax/3;
+long breakTimer = timerMax;
+long taskTimer = 0;
 int breakTimerMinutes;
 unsigned long breakConstrain = timerMax;
 unsigned long lastMillis = 0;
@@ -68,10 +72,6 @@ bool breakSelected = false;
 float selectionThreshold = 0.15;
 bool taskHighlight = false;
 bool breakHighlight = false;
-
-
-//charging
-#define THRESHOLD_CHARGING      4.0 //3.7
 
 //digits for matrix display
 static const uint8_t PROGMEM DIGITS[][8] = {
@@ -236,11 +236,18 @@ void setup(){
   //client.begin(mqtt_server, net);
   client.onMessage(messageReceived);
   connect();
+
+  configTime(timezone * 3600, dst*3600, "pool.ntp.org", "time.nist.gov");
+  Serial.println("\nWaiting for time");
+  while (!time(nullptr)) {
+    Serial.print(".");
+    delay(1000);
+  }
 }
 
 void loop()
 {
-  bool foo = 0;
+  static bool foo = 0;
   currentMillis = millis();
   if(isCharging()){
     foo = 1;
@@ -263,6 +270,13 @@ void loop()
     connect();
   }
 
+  //reset once a day
+  time_t t = time(nullptr);
+  int hourmin = hour(t)*100+minute(t);
+  Serial.println(hourmin);
+  if(hourmin == 2359){
+    WiFi.forceSleepBegin(); wdt_reset(); ESP.restart(); //while(1)wdt_reset();
+  }
 
   lastMillis = currentMillis;
 }
@@ -270,7 +284,7 @@ void loop()
 void chargeLoop()
 {
     for(int i=0; i<NUM_LEDS; i++){
-      leds[i] = CHSV(yellow, 255, 80);
+      leds[i] = CHSV(yellow, 255, 200);
     }
 
     static unsigned long lastMatrix = 0;
@@ -433,11 +447,11 @@ void updateAcc()
 
 
   totalAccel = sqrt(ax * ax + ay * ay + az * az);
-  Serial.print(ax);
-  Serial.print(", ");
-  Serial.print(ay);
-  Serial.print(", ");
-  Serial.println(az);
+//  Serial.print(ax);
+//  Serial.print(", ");
+//  Serial.print(ay);
+//  Serial.print(", ");
+//  Serial.println(az);
 }
 
 //sets leds according to passed timer
@@ -559,7 +573,7 @@ bool isCharging()
   int sensorValue = analogRead(CHARGE_PIN);
   // Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 5V):
   float voltage = sensorValue * (5.0 / 1023.0);
-  //Serial.println(voltage);
+  Serial.println(voltage);
   // print out the value you read:
   //Serial.println(voltage);
   if (voltage > THRESHOLD_CHARGING)
