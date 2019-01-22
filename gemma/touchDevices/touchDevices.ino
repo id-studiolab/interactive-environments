@@ -18,21 +18,24 @@
 char id[] = "1";
 
 //charging
-#define THRESHOLD_CHARGING      3.0
+#define THRESHOLD_CHARGING      3.2
 
 //wifi credentials
-//char ssid[] = "iot-net";
-//char pass[] = "interactive";
-char ssid[] = "Bjarke";
-char pass[] = "testtest";
+  char ssid[] = "iot-net";
+  char pass[] = "interactive";
+//  char ssid[] = "Bjarke";
+//  char pass[] = "testtest";
 int timezone = 1;
 int dst = 0;
 
 //mqtt credentials
-char mqtt_server[] = "m23.cloudmqtt.com";
-char mqtt_username[] = "ccsycwwb";
-char mqtt_password[] = "iEChr1Rbiax_";
-int mqtt_port = 13154;
+//char mqtt_server[] = "m23.cloudmqtt.com";
+//char mqtt_username[] = "ccsycwwb";
+//char mqtt_password[] = "iEChr1Rbiax_";
+//int mqtt_port = 13154;
+char mqtt_server[] = "192.168.1.23";
+char mqtt_username[] = "sharing";
+char mqtt_password[] = "caring";
 
 
 WiFiClient net;
@@ -246,8 +249,8 @@ void setup(){
   matrix.begin(0x70); // pass in the address
 
   WiFi.begin(ssid, pass);
-  client.begin(mqtt_server, mqtt_port, net);
-  //client.begin(mqtt_server, net);
+  //client.begin(mqtt_server, mqtt_port, net);
+  client.begin(mqtt_server, net);
   client.onMessage(messageReceived);
   connect();
 
@@ -271,18 +274,23 @@ void setup(){
 void loop()
 {
   static bool foo = 0;
+  static int chargecount = 0;
   currentMillis = millis();
   if(isCharging()){
-
+    chargecount = 0;
     foo = 1;
     chargeLoop();
   }
   else{
-    if (foo){
-      client.publish("pickup", id);
+    if(chargecount<10){
+      chargecount++;
+    } else {
+      if (foo){
+      client.publish("/gemma/pickup", id);
+      }
+      foo = 0;
+      timerLoop(); 
     }
-    foo = 0;
-    timerLoop();
   }
   FastLED.show();
 
@@ -297,7 +305,7 @@ void loop()
   //reset once a day
   time_t t = time(nullptr);
   int hourmin = hour(t)*100+minute(t);
-  Serial.println(hourmin);
+  //Serial.println(hourmin);
   if(hourmin == 2359){
     WiFi.forceSleepBegin(); wdt_reset(); ESP.restart(); //while(1)wdt_reset();
   }
@@ -474,7 +482,7 @@ void connect()
 
   Serial.println("\nconnected!");
 
-  client.subscribe("/pickup");
+  client.subscribe("/gemma/pickup");
   //client.subscribe("/hello");
   // client.unsubscribe("/hello");
 }

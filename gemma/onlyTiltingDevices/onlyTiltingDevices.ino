@@ -13,22 +13,25 @@
 char id[] = "2";
 
 //charging
-#define THRESHOLD_CHARGING      3.9 //not actual voltage, just the read on pin a0
+#define THRESHOLD_CHARGING      3.6 //not actual voltage, just the read on pin a0
 
 
 //wifi credentials
-//char ssid[] = "iot-net";
-//char pass[] = "interactive";
-char ssid[] = "Bjarke";
-char pass[] = "testtest";
+char ssid[] = "iot-net";
+char pass[] = "interactive";
+//char ssid[] = "Bjarke";
+//char pass[] = "testtest";
 int timezone = 1;
 int dst = 0;
 
 //mqtt credentials
-char mqtt_server[] = "m23.cloudmqtt.com";
-char mqtt_username[] = "ccsycwwb";
-char mqtt_password[] = "iEChr1Rbiax_";
-int mqtt_port = 13154;
+//char mqtt_server[] = "m23.cloudmqtt.com";
+//char mqtt_username[] = "ccsycwwb";
+//char mqtt_password[] = "iEChr1Rbiax_";
+//int mqtt_port = 13154;
+char mqtt_server[] = "192.168.1.23";
+char mqtt_username[] = "sharing";
+char mqtt_password[] = "caring";
 
 WiFiClient net;
 MQTTClient client;
@@ -232,8 +235,8 @@ void setup(){
   matrix.begin(0x70); // pass in the address
 
   WiFi.begin(ssid, pass);
-  client.begin(mqtt_server, mqtt_port, net);
-  //client.begin(mqtt_server, net);
+  //client.begin(mqtt_server, mqtt_port, net);
+  client.begin(mqtt_server, net);
   client.onMessage(messageReceived);
   connect();
 
@@ -255,7 +258,7 @@ void loop()
   }
   else{
     if (foo){
-      client.publish("pickup", id);
+      client.publish("/gemma/pickup", id);
     }
     foo = 0;
     timerLoop();
@@ -460,7 +463,7 @@ void updateAcc()
 //the 'up' parameter specifies if the leds should be filing up towards higher or lower index
 void setLedColor(int firstLed, int num_leds, long timer, int hue, int saturation, bool highlight, bool up)
 {
-  int valueMin = highlight ? 55 : 0;
+  int valueMin = highlight ? 85 : 0;
   int valueMax = highlight ? 255 : 200;
   for (int i = firstLed; i < num_leds + firstLed; i++){
   int value = map(
