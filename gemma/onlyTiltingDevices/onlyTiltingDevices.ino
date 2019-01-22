@@ -10,10 +10,10 @@
 #include <TimeLib.h>
 
 //id numbers so we can distinguish between the Gemmas
-char id[] = "2";
+char id[] = "3";
 
 //charging
-#define THRESHOLD_CHARGING      3.6 //not actual voltage, just the read on pin a0
+#define THRESHOLD_CHARGING      3.2 //not actual voltage, just the read on pin a0
 
 
 //wifi credentials
@@ -25,13 +25,13 @@ int timezone = 1;
 int dst = 0;
 
 //mqtt credentials
-//char mqtt_server[] = "m23.cloudmqtt.com";
-//char mqtt_username[] = "ccsycwwb";
-//char mqtt_password[] = "iEChr1Rbiax_";
-//int mqtt_port = 13154;
-char mqtt_server[] = "192.168.1.23";
-char mqtt_username[] = "sharing";
-char mqtt_password[] = "caring";
+//char MQTT_SERVER[] = "m23.cloudmqtt.com";
+//char MQTT_USERNAME[] = "ccsycwwb";
+//char MQTT_PASSWORD[] = "iEChr1Rbiax_";
+//int MQTT_PORT = 13154;
+char MQTT_SERVER[] = "192.168.1.23";
+char MQTT_USERNAME[] = "sharing";
+char MQTT_PASSWORD[] = "caring";
 
 WiFiClient net;
 MQTTClient client;
@@ -77,7 +77,7 @@ bool taskHighlight = false;
 bool breakHighlight = false;
 
 //digits for matrix display
-static const uint8_t PROGMEM DIGITS[][8] = {
+const byte PROGMEM DIGITS[][8] = {
     {B00000000,
      B11100000,
      B10100000,
@@ -224,6 +224,45 @@ const byte CHARGING_IMAGES[][8] = {
   B01111110
 }};
 const int CHARGING_LEN = sizeof(CHARGING_IMAGES)/8;
+const byte WIFI_IMAGES[][8] = {
+{
+  B00000000,
+  B00000000,
+  B00000000,
+  B00000000,
+  B00000000,
+  B00000000,
+  B00000000,
+  B00000001
+},{
+  B00000000,
+  B00000000,
+  B00000000,
+  B00000000,
+  B00000000,
+  B00000011,
+  B00000100,
+  B00000101
+},{
+  B00000000,
+  B00000000,
+  B00000000,
+  B00000111,
+  B00001000,
+  B00010011,
+  B00010100,
+  B00010101
+},{
+  B00000000,
+  B00001111,
+  B00010000,
+  B00100111,
+  B01001000,
+  B01010011,
+  B01010100,
+  B01010101
+}};
+const int WIFI_LEN = sizeof(WIFI_IMAGES)/8;
 
 
 void setup(){
@@ -235,8 +274,8 @@ void setup(){
   matrix.begin(0x70); // pass in the address
 
   WiFi.begin(ssid, pass);
-  //client.begin(mqtt_server, mqtt_port, net);
-  client.begin(mqtt_server, net);
+  //client.begin(MQTT_SERVER, MQTT_PORT, net);
+  client.begin(MQTT_SERVER, net);
   client.onMessage(messageReceived);
   connect();
 
@@ -265,20 +304,22 @@ void loop()
   }
   FastLED.show();
 
-  client.loop();
-  delay(10);
+  if (client.connected())
+  {
+    client.loop();
+    delay(10);
 
-  if (!client.connected())
+    //reset once a day
+    time_t t = time(nullptr);
+    int hourmin = hour(t)*100+minute(t);
+    //Serial.println(hourmin);
+    if(hourmin == 2359){
+      WiFi.forceSleepBegin(); wdt_reset(); ESP.restart(); //while(1)wdt_reset();
+    }
+  } else
   {
     connect();
-  }
-
-  //reset once a day
-  time_t t = time(nullptr);
-  int hourmin = hour(t)*100+minute(t);
-  Serial.println(hourmin);
-  if(hourmin == 2359){
-    WiFi.forceSleepBegin(); wdt_reset(); ESP.restart(); //while(1)wdt_reset();
+    matrixWifi();
   }
 
   lastMillis = currentMillis;
@@ -289,19 +330,8 @@ void chargeLoop()
     for(int i=0; i<NUM_LEDS; i++){
       leds[i] = CHSV(yellow, 255, 200);
     }
-
-    static unsigned long lastMatrix = 0;
-    if (currentMillis-lastMatrix>500){
-      lastMatrix = currentMillis;
-      static int index = 0;
-      matrix.clear();
-      matrix.setRotation(2);
-      matrix.drawBitmap(0, 0, CHARGING_IMAGES[index], 8, 8, LED_ON);
-      matrix.writeDisplay();
-      index++;
-      if(index>=CHARGING_LEN)
-          index = 0;
-    }
+    
+    matrixCharge();
 
     // publish a message roughly every ten seconds.
     if (currentMillis - lastMqtt  > 10*1000)
@@ -347,15 +377,16 @@ void timerLoop()
   }
 
   if (az< 0-selectionThreshold){
-    taskSelected = true;
-    breakSelected = false;
-    taskHighlight = true;
-    breakHighlight = false;
-  } else if(az > selectionThreshold){
     taskSelected = false;
     breakSelected = true;
     taskHighlight = false;
     breakHighlight = true;
+
+  } else if(az > selectionThreshold){
+    taskSelected = true;
+    breakSelected = false;
+    taskHighlight = true;
+    breakHighlight = false;
   }
   else {
     taskSelected = false;
@@ -407,33 +438,28 @@ void timerLoop()
 //connects to mqtt server
 void connect()
 {
-  Serial.print("checking wifi...");
-  while (WiFi.status() != WL_CONNECTED)
+  if (WiFi.status() != WL_CONNECTED)
   {
-    Serial.print(".");
-    delay(1000);
+    Serial.println("No Wifi connection");
   }
-  Serial.print("\nwifi connected!");
-  char userID[] = "Gemma";
-  strcat(userID, id);
-  Serial.print("\nconnecting...");
-  while (!client.connect(userID, mqtt_username, mqtt_password))
+  else if(!client.connected())
   {
-    Serial.print(".");
-    delay(1000);
+    char userID[] = "gemma";
+    strcat(userID, id);
+    client.connect(userID, MQTT_USERNAME, MQTT_PASSWORD);
+    client.subscribe("/gemma/pickup");
+      if (client.connected())
+      {
+          Serial.println("mqtt connected");
+      }
   }
-
-  Serial.println("\nconnected!");
-
-  client.subscribe("/pickup");
-  // client.unsubscribe("/hello");
 }
 
 //prints a recieved messagee
 void messageReceived(String &topic, String &payload)
 {
   Serial.println("incoming: " + topic + " - " + payload);
-  if(topic=="pickup"){
+  if(topic=="/gemma/pickup" && !isCharging()){
     pickupNotification();
   }
 }
@@ -554,6 +580,8 @@ void pickupNotification(){
 //uses the DIGITS array specified at the top
 void drawNumbers(int number)
 {
+  if (!client.connected())
+    return;
   int first = number/ 10;
   int second = number % 10;
 
@@ -567,6 +595,39 @@ void drawNumbers(int number)
   matrix.drawBitmap(0, 0, DIGITS[first], 8, 8, LED_ON);
   matrix.drawBitmap(5, 0, DIGITS[second], 8, 8, LED_ON);
   matrix.writeDisplay();
+}
+
+void matrixWifi()
+{
+  static uint8_t count = 0;
+  static unsigned int lastMatrix = 0;
+  if(currentMillis-lastMatrix>500){
+    matrix.clear();
+    matrix.drawBitmap(0, 0, WIFI_IMAGES[count], 8, 8, LED_ON);
+    matrix.writeDisplay();
+    lastMatrix = currentMillis;
+    count++;
+    if(count>=WIFI_LEN){
+      count = 0;
+    }
+  }
+}
+
+void matrixCharge(){
+  if (!client.connected())
+    return;
+  static unsigned long lastMatrix = 0;
+    if (currentMillis-lastMatrix>500){
+      lastMatrix = currentMillis;
+      static int index = 0;
+      matrix.clear();
+      matrix.setRotation(2);
+      matrix.drawBitmap(0, 0, CHARGING_IMAGES[index], 8, 8, LED_ON);
+      matrix.writeDisplay();
+      index++;
+      if(index>=CHARGING_LEN)
+          index = 0;
+    }
 }
 
 //checks voltage on USB pin to detect charging
