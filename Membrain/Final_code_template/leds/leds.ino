@@ -9,10 +9,10 @@
 #define DATA_PIN 5
 
 // Define the array of leds
-CRGB leds[NUM_LEDS];
+CRGB leds[NUM_LEDS]; 
 
-const char ssid[] = "iot-net";
-const char pass[] = "interactive";
+const char ssid[] = "AMS";
+const char pass[] = "amsterdam";
 
 WiFiClient net;
 MQTTClient client;
