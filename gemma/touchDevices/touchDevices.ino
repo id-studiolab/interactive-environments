@@ -1,34 +1,48 @@
-//nescessary for c++ project
-//#include <Arduino.h>
-//#include <main.h>
-
 //nescessary for all arduino projects
 #include <Wire.h>
 #include <ADXL345.h>
 #include <FastLED.h>
-#include <WiFi.h>
+#include <ESP8266WiFi.h>
 #include <MQTT.h>
 #include <Adafruit_GFX.h>
-#include "Adafruit_MPR121.h"
 #include <Adafruit_LEDBackpack.h>
+#include "Adafruit_MPR121.h"
+#include <time.h>
+#include <TimeLib.h>
 
 #ifndef _BV
-#define _BV(bit) (1 << (bit)) 
+#define _BV(bit) (1 << (bit))
 #endif
 
-//id numbers so we can distinguish between the Gemmas 
+//id numbers so we can distinguish between the Gemmas
 char id[] = "1";
 
+//charging
+#define THRESHOLD_CHARGING      3.2
 
 //wifi credentials
-char ssid[] = "iot-net";
-char pass[] = "interactive";
+  char ssid[] = "iot-net";
+  char pass[] = "interactive";
+//  char ssid[] = "Bjarke";
+//  char pass[] = "testtest";
+int timezone = 1;
+int dst = 0;
+
+//mqtt credentials
+//char MQTT_SERVER[] = "m23.cloudmqtt.com";
+//char MQTT_USERNAME[] = "ccsycwwb";
+//char MQTT_PASSWORD[] = "iEChr1Rbiax_";
+//int MQTT_PORT = 13154;
+char MQTT_SERVER[] = "192.168.1.23";
+char MQTT_USERNAME[] = "sharing";
+char MQTT_PASSWORD[] = "caring";
+
 
 WiFiClient net;
 MQTTClient client;
 
 //pin connections
-#define LED_PIN 5
+#define LED_PIN 12
 #define NUM_LEDS 12
 #define CHARGE_PIN A0
 
@@ -46,9 +60,9 @@ ADXL345 adxl; //variable adxl is an instance of the ADXL345 library
 
 //time stuff
 float scaleFactor = 1;
-unsigned long timerMax = scaleFactor * 60 * 60 * 1000L;
-long breakTimer = timerMax/2;
-long taskTimer = timerMax/3;
+unsigned long timerMax = (60/scaleFactor) * 60 * 1000L;
+long breakTimer = timerMax;
+long taskTimer = 0;
 int breakTimerMinutes;
 unsigned long breakConstrain = timerMax;
 unsigned long lastMillis = 0;
@@ -77,11 +91,8 @@ Adafruit_MPR121 cap = Adafruit_MPR121();
 int lastTouch = 0;
 int touch = 0;
 
-//charging
-#define THRESHOLD_CHARGING      1.45
-
 //digits for matrix display
-static const uint8_t PROGMEM DIGITS[][8] = {
+const byte PROGMEM DIGITS[][8] = {
     {B00000000,
      B11100000,
      B10100000,
@@ -228,85 +239,137 @@ const byte CHARGING_IMAGES[][8] = {
   B01111110
 }};
 const int CHARGING_LEN = sizeof(CHARGING_IMAGES)/8;
+const byte WIFI_IMAGES[][8] = {
+{
+  B00000000,
+  B00000000,
+  B00000000,
+  B00000000,
+  B00000000,
+  B00000000,
+  B00000000,
+  B00000001
+},{
+  B00000000,
+  B00000000,
+  B00000000,
+  B00000000,
+  B00000000,
+  B00000011,
+  B00000100,
+  B00000101
+},{
+  B00000000,
+  B00000000,
+  B00000000,
+  B00000111,
+  B00001000,
+  B00010011,
+  B00010100,
+  B00010101
+},{
+  B00000000,
+  B00001111,
+  B00010000,
+  B00100111,
+  B01001000,
+  B01010011,
+  B01010100,
+  B01010101
+}};
+const int WIFI_LEN = sizeof(WIFI_IMAGES)/8;
 
 void setup(){
   Wire.begin();
   Serial.begin(9600);
-  
-  WiFi.begin(ssid, pass);
-  client.begin("192.168.1.23", net);
-  client.onMessage(messageReceived);
 
-  connect();
   adxl.powerOn();
   FastLED.addLeds<NEOPIXEL, LED_PIN>(leds, NUM_LEDS);
-
   matrix.begin(0x70); // pass in the address
+
+  WiFi.begin(ssid, pass);
+  //client.begin(MQTT_SERVER, MQTT_PORT, net);
+  client.begin(MQTT_SERVER, net);
+  client.onMessage(messageReceived);
+  connect();
+
+  configTime(timezone * 3600, dst*3600, "pool.ntp.org", "time.nist.gov");
+  Serial.println("\nWaiting for time");
+  while (!time(nullptr)) {
+    Serial.print(".");
+    delay(1000);
+  }
 
   if (!cap.begin(0x5B)) {
     Serial.println("MPR121 not found, check wiring?");
     while (1);
   }
   cap.writeRegister(MPR121_ECR, 0x0);
-  cap.setThresholds(8, 5);
+  cap.setThresholds(7, 4);
   cap.writeRegister(MPR121_ECR, 0x8F);
   Serial.println("MPR121 found!");
 }
 
 void loop()
 {
-  bool foo = 0;
+  static bool foo = 0;
+  static int chargecount = 0;
   currentMillis = millis();
   if(isCharging()){
+    chargecount = 0;
     foo = 1;
     chargeLoop();
   }
   else{
-    if (foo){
-      client.publish("pickup", "hello");
+    if(chargecount<10){
+      chargecount++;
+    } else {
+      if (foo){
+      client.publish("/gemma/pickup", id);
+      }
+      foo = 0;
+      timerLoop();
     }
-    foo = 0;
-    timerLoop();
   }
   FastLED.show();
 
-  client.loop();
-  delay(10);
+  if (client.connected())
+  {
+    client.loop();
+    delay(10);
 
-  if (!client.connected())
+    //reset once a day
+    time_t t = time(nullptr);
+    int hourmin = hour(t)*100+minute(t);
+    //Serial.println(hourmin);
+    if(hourmin == 2359){
+      WiFi.forceSleepBegin(); wdt_reset(); ESP.restart(); //while(1)wdt_reset();
+    }
+  } else
   {
     connect();
+    matrixWifi();
   }
-  
- 
+
   lastMillis = currentMillis;
 }
 
 void chargeLoop()
 {
     for(int i=0; i<NUM_LEDS; i++){
-      leds[i] = CHSV(yellow, 255, 80);  
+      leds[i] = CHSV(yellow, 255, 200);
     }
     
-    static unsigned long lastMatrix = 0;
-    if (currentMillis-lastMatrix>500){
-      static int index = 0;
-      matrix.clear();
-      matrix.drawBitmap(0, 0, CHARGING_IMAGES[index], 8, 8, LED_ON);
-      matrix.writeDisplay();
-      index++;
-      if(index>=CHARGING_LEN)
-          index = 0;
-    }
+    matrixCharge();
 
     // publish a message roughly every ten seconds.
     if (currentMillis - lastMqtt  > 10*1000)
-    { 
+    {
       lastMqtt = currentMillis;
       char str[] = "/gemma/charging/";
       strcat(str, id);
       client.publish(str, "charging");
-      }
+    }
 
   //reset timer variables
   breakConstrain=timerMax;
@@ -314,7 +377,7 @@ void chargeLoop()
   taskTimer = 0;
   breakTimerOn = true;
   taskTimerOn = false;
-  
+
 }
 
 void timerLoop()
@@ -326,37 +389,37 @@ void timerLoop()
   //update data from accelerometer
   updateAcc();
 
-  // publish a message roughly every ten seconds.
-  if (currentMillis - lastMqtt  > 10*1000)
-  {
-    lastMqtt = currentMillis;
+// publish a message roughly every ten seconds.
+if (currentMillis - lastMqtt  > 10*1000)
+{
+  lastMqtt = currentMillis;
 
-    char str[] = "/gemma/availability/";
-    strcat(str, id);
-    if(ax<=0){
-      client.publish(str, "social");
-    }
-    if(ax>0){
-      client.publish(str, "focused");
-    }
-
+  char str[] = "/gemma/availability/";
+  strcat(str, id);
+  if(ax<=0){
+    client.publish(str, "social");
   }
+  if(ax>0){
+    client.publish(str, "focused");
+  }
+
+}
 
 
   //check touch surface
   touch = touchCheck();
-  Serial.println(touch);
+  //Serial.println(touch);
 
   if (az< 0-selectionThreshold){
-    taskSelected = true;
-    breakSelected = false;
-    taskHighlight = true;
-    breakHighlight = false;
-  } else if(az > selectionThreshold){
     taskSelected = false;
     breakSelected = true;
     taskHighlight = false;
     breakHighlight = true;
+  } else if(az > selectionThreshold){
+    taskSelected = true;
+    breakSelected = false;
+    taskHighlight = true;
+    breakHighlight = false;
   }
   else {
     taskSelected = false;
@@ -364,17 +427,17 @@ void timerLoop()
     taskHighlight = false;
     breakHighlight = false;
   }
-  
+
   //set timers based on user input
   if (touch!=lastTouch && touch>0){
     if(taskSelected){
-      if(ay>0)
+      if(ay<0)
         taskTimer = map(touch, 7, 1, 0, timerMax);
       else
         taskTimer = map(touch, 0, 6, 0, timerMax);
       taskTimerOn = true;
     } else if(breakSelected){
-      if(ay>0)
+      if(ay<0)
         breakTimer = map(touch, 7, 1, 0, timerMax);
       else
         breakTimer = map(touch, 0, 6, 0, timerMax);
@@ -406,12 +469,12 @@ void timerLoop()
   if(ay<=0){
     setLedColor(0, 6, taskTimer, 0, 0, taskHighlight, false);       //set task side to white
     setLedColor(6, 6, breakTimer, blue, 255, breakHighlight, true); //set break side to blue
-    Serial.println("up");
+
   } else if(ay>0){
     setLedColor(0, 6, taskTimer, 0, 0, taskHighlight, true);         //set task side to white
     setLedColor(6, 6, breakTimer, green, 255, breakHighlight, false); //set break side to green
   }
-  drawNumbers(breakTimer/(60000*scaleFactor));
+  drawNumbers(breakTimer/(60000/scaleFactor));
   delay(100);
 }
 
@@ -426,35 +489,31 @@ void timerLoop()
 */
 
 
-
 //connects to mqtt server
 void connect()
 {
-  Serial.print("checking wifi...");
-  while (WiFi.status() != WL_CONNECTED)
+  if (WiFi.status() != WL_CONNECTED)
   {
-    Serial.print(".");
-    delay(1000);
+    Serial.println("No Wifi connection");
   }
-
-  Serial.print("\nconnecting...");
-  while (!client.connect("Deskmate", "sharing", "caring"))
+  else if(!client.connected())
   {
-    Serial.print(".");
-    delay(1000);
+    char userID[] = "gemma";
+    strcat(userID, id);
+    client.connect(userID, MQTT_USERNAME, MQTT_PASSWORD);
+    client.subscribe("/gemma/pickup");
+      if (client.connected())
+      {
+          Serial.println("mqtt connected");
+      }
   }
-
-  Serial.println("\nconnected!");
-
-  //client.subscribe("/hello");
-  // client.unsubscribe("/hello");
 }
 
 //prints a recieved messagee
 void messageReceived(String &topic, String &payload)
 {
   Serial.println("incoming: " + topic + " - " + payload);
-  if(topic=="pickup"){
+  if(topic=="/gemma/pickup" && !isCharging()){
     pickupNotification();
   }
 }
@@ -464,19 +523,24 @@ void messageReceived(String &topic, String &payload)
 void updateAcc()
 {
   adxl.getAcceleration(xyz);
-  ax = xyz[0];
-  ay = xyz[1];
-  az = xyz[2];
+  ax = 0 - xyz[2];
+  ay = 0 - xyz[0];
+  az = 0 - xyz[1];
   totalAccel = sqrt(ax * ax + ay * ay + az * az);
+//  Serial.print(ax);
+//  Serial.print(", ");
+//  Serial.print(ay);
+//  Serial.print(", ");
+//  Serial.println(az);
 }
 
 //sets leds according to passed timer
 //you need to pass the leds you want to control and the hue and saturatiion - value is determined by the timer
 //highlight will change the scheme to be slightly lighter. used to indicate to the user that they have selected a side
-//the 'up' parameter specifies if the leds should be filing up towards higher or lower index 
+//the 'up' parameter specifies if the leds should be filing up towards higher or lower index
 void setLedColor(int firstLed, int num_leds, long timer, int hue, int saturation, bool highlight, bool up)
 {
-  int valueMin = highlight ? 55 : 0;
+  int valueMin = highlight ? 85 : 0;
   int valueMax = highlight ? 255 : 200;
   for (int i = firstLed; i < num_leds + firstLed; i++){
   int value = map(
@@ -520,7 +584,7 @@ void taskAlarm()
 //runs until canceled by sliding or shaking
 void breakAlarm()
 {
-  char str[] = "/gemmaa/break/";
+  char str[] = "/gemma/break/";
   strcat(str, id);
   client.publish(str, "break");
   delay(10);
@@ -584,6 +648,42 @@ void drawNumbers(int number)
   matrix.writeDisplay();
 }
 
+
+void matrixWifi()
+{
+  if (!client.connected())
+    return;
+  static uint8_t count = 0;
+  static unsigned int lastMatrix = 0;
+  if(currentMillis-lastMatrix>500){
+    matrix.clear();
+    matrix.drawBitmap(0, 0, WIFI_IMAGES[count], 8, 8, LED_ON);
+    matrix.writeDisplay();
+    lastMatrix = currentMillis;
+    count++;
+    if(count>=WIFI_LEN){
+      count = 0;
+    }
+  }
+}
+
+void matrixCharge(){
+  if (!client.connected())
+    return;
+  static unsigned long lastMatrix = 0;
+    if (currentMillis-lastMatrix>500){
+      lastMatrix = currentMillis;
+      static int index = 0;
+      matrix.clear();
+      matrix.setRotation(2);
+      matrix.drawBitmap(0, 0, CHARGING_IMAGES[index], 8, 8, LED_ON);
+      matrix.writeDisplay();
+      index++;
+      if(index>=CHARGING_LEN)
+          index = 0;
+    }
+}
+
 //checks voltage on USB pin to detect charging
 //returns true if charging, false if not
 bool isCharging()
@@ -591,7 +691,6 @@ bool isCharging()
   int sensorValue = analogRead(CHARGE_PIN);
   // Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 5V):
   float voltage = sensorValue * (5.0 / 1023.0);
-  // print out the value you read:
   //Serial.println(voltage);
   if (voltage > THRESHOLD_CHARGING)
     return true;
@@ -606,19 +705,17 @@ int touchCheck(){
   static uint16_t lasttouched = 0;
   static uint16_t currtouched = 0;
   currtouched = cap.touched();
-  
+  //Serial.println(currtouched);
+
   for (uint8_t i=0; i<12; i++) {
     // it if *is* touched and *wasnt* touched before, alert!
     if ((currtouched & _BV(i)) && !(lasttouched & _BV(i)) ) {
-      return i;
+      return i+1;
     }
-//    // if it *was* touched and now *isnt*, alert!
-//    if (!(currtouched & _BV(i)) && (lasttouched & _BV(i)) ) {
-//      Serial.print(i); Serial.println(" released");
-//    }
   }
+
+  return 0;
 
   // reset our state
   lasttouched = currtouched;
-  return 0;
 }

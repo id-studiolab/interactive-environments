@@ -1,34 +1,31 @@
-//nescessary for c++ project
-//#include <Arduino.h>
-//#include <main.h>
-
 //nescessary for all arduino projects
 #include <Wire.h>
 #include <ADXL345.h>
 #include <FastLED.h>
-#include <WiFi.h>
+#include <ESP8266WiFi.h>
 #include <MQTT.h>
 #include <Adafruit_GFX.h>
-#include "Adafruit_MPR121.h"
 #include <Adafruit_LEDBackpack.h>
 
-#ifndef _BV
-#define _BV(bit) (1 << (bit)) 
-#endif
-
 //id numbers so we can distinguish between the Gemmas 
-char id[] = "1";
+char id[] = "2";
 
 
 //wifi credentials
 char ssid[] = "iot-net";
 char pass[] = "interactive";
 
+//mqtt credentials
+char mqtt_server[] = "m23.cloudmqtt.com";
+char mqtt_username[] = "ccsycwwb";
+char mqtt_password[] = "iEChr1Rbiax_"; 
+int mqtt_port = 13154;
+
 WiFiClient net;
 MQTTClient client;
 
 //pin connections
-#define LED_PIN 5
+#define LED_PIN 12
 #define NUM_LEDS 12
 #define CHARGE_PIN A0
 
@@ -45,8 +42,8 @@ int red = map(0, 0, 360, 0, 255);
 ADXL345 adxl; //variable adxl is an instance of the ADXL345 library
 
 //time stuff
-float scaleFactor = 1;
-unsigned long timerMax = scaleFactor * 60 * 60 * 1000L;
+float scaleFactor = 60;
+unsigned long timerMax = (60/scaleFactor) * 60 * 1000L;
 long breakTimer = timerMax/2;
 long taskTimer = timerMax/3;
 int breakTimerMinutes;
@@ -69,16 +66,9 @@ float selectionThreshold = 0.15;
 bool taskHighlight = false;
 bool breakHighlight = false;
 
-// You can have up to 4 on one i2c bus but one is enough for testing!
-Adafruit_MPR121 cap = Adafruit_MPR121();
-
-// Keeps track of the last pins touched
-// so we know when buttons are 'released'
-int lastTouch = 0;
-int touch = 0;
 
 //charging
-#define THRESHOLD_CHARGING      1.45
+#define THRESHOLD_CHARGING      3.8
 
 //digits for matrix display
 static const uint8_t PROGMEM DIGITS[][8] = {
@@ -229,28 +219,20 @@ const byte CHARGING_IMAGES[][8] = {
 }};
 const int CHARGING_LEN = sizeof(CHARGING_IMAGES)/8;
 
+
 void setup(){
   Wire.begin();
   Serial.begin(9600);
-  
-  WiFi.begin(ssid, pass);
-  client.begin("192.168.1.23", net);
-  client.onMessage(messageReceived);
 
-  connect();
   adxl.powerOn();
   FastLED.addLeds<NEOPIXEL, LED_PIN>(leds, NUM_LEDS);
-
   matrix.begin(0x70); // pass in the address
-
-  if (!cap.begin(0x5B)) {
-    Serial.println("MPR121 not found, check wiring?");
-    while (1);
-  }
-  cap.writeRegister(MPR121_ECR, 0x0);
-  cap.setThresholds(8, 5);
-  cap.writeRegister(MPR121_ECR, 0x8F);
-  Serial.println("MPR121 found!");
+  
+  WiFi.begin(ssid, pass);
+  client.begin(mqtt_server, mqtt_port, net);
+  //client.begin(mqtt_server, net);
+  client.onMessage(messageReceived);
+  connect();
 }
 
 void loop()
@@ -263,7 +245,7 @@ void loop()
   }
   else{
     if (foo){
-      client.publish("pickup", "hello");
+      client.publish("pickup", id);
     }
     foo = 0;
     timerLoop();
@@ -287,9 +269,11 @@ void chargeLoop()
     for(int i=0; i<NUM_LEDS; i++){
       leds[i] = CHSV(yellow, 255, 80);  
     }
-    
+  
     static unsigned long lastMatrix = 0;
     if (currentMillis-lastMatrix>500){
+      matrix.setRotation(2);
+      lastMatrix = currentMillis;
       static int index = 0;
       matrix.clear();
       matrix.drawBitmap(0, 0, CHARGING_IMAGES[index], 8, 8, LED_ON);
@@ -342,11 +326,6 @@ void timerLoop()
 
   }
 
-
-  //check touch surface
-  touch = touchCheck();
-  Serial.println(touch);
-
   if (az< 0-selectionThreshold){
     taskSelected = true;
     breakSelected = false;
@@ -359,32 +338,9 @@ void timerLoop()
     breakHighlight = true;
   }
   else {
-    taskSelected = false;
-    breakSelected = false;
     taskHighlight = false;
     breakHighlight = false;
   }
-  
-  //set timers based on user input
-  if (touch!=lastTouch && touch>0){
-    if(taskSelected){
-      if(ay>0)
-        taskTimer = map(touch, 7, 1, 0, timerMax);
-      else
-        taskTimer = map(touch, 0, 6, 0, timerMax);
-      taskTimerOn = true;
-    } else if(breakSelected){
-      if(ay>0)
-        breakTimer = map(touch, 7, 1, 0, timerMax);
-      else
-        breakTimer = map(touch, 0, 6, 0, timerMax);
-      breakTimerOn = true;
-    }
-  } else {
-    //if not touched
-  }
-  lastTouch = touch;
-
   if(breakTimer <=0){
     breakTimer = 0;
     if(breakTimerOn){
@@ -406,12 +362,11 @@ void timerLoop()
   if(ay<=0){
     setLedColor(0, 6, taskTimer, 0, 0, taskHighlight, false);       //set task side to white
     setLedColor(6, 6, breakTimer, blue, 255, breakHighlight, true); //set break side to blue
-    Serial.println("up");
   } else if(ay>0){
     setLedColor(0, 6, taskTimer, 0, 0, taskHighlight, true);         //set task side to white
     setLedColor(6, 6, breakTimer, green, 255, breakHighlight, false); //set break side to green
   }
-  drawNumbers(breakTimer/(60000*scaleFactor));
+  drawNumbers(breakTimer/(60000/scaleFactor));
   delay(100);
 }
 
@@ -436,9 +391,11 @@ void connect()
     Serial.print(".");
     delay(1000);
   }
-
+  Serial.print("\nwifi connected!");
+  char userID[] = "Gemma";
+  strcat(userID, id);  
   Serial.print("\nconnecting...");
-  while (!client.connect("Deskmate", "sharing", "caring"))
+  while (!client.connect(userID, mqtt_username, mqtt_password))
   {
     Serial.print(".");
     delay(1000);
@@ -446,7 +403,7 @@ void connect()
 
   Serial.println("\nconnected!");
 
-  //client.subscribe("/hello");
+  client.subscribe("/pickup");
   // client.unsubscribe("/hello");
 }
 
@@ -468,6 +425,11 @@ void updateAcc()
   ay = xyz[1];
   az = xyz[2];
   totalAccel = sqrt(ax * ax + ay * ay + az * az);
+//  Serial.print(ax);
+//  Serial.print(", ");
+//  Serial.print(ay);
+//  Serial.print(", ");
+//  Serial.println(az);
 }
 
 //sets leds according to passed timer
@@ -520,14 +482,13 @@ void taskAlarm()
 //runs until canceled by sliding or shaking
 void breakAlarm()
 {
-  char str[] = "/gemmaa/break/";
+  char str[] = "/gemma/break/";
   strcat(str, id);
   client.publish(str, "break");
   delay(10);
   int value = 50;
   bool up = true;
-  touch = lastTouch;
-  while(touch==lastTouch && totalAccel<2)
+  while(totalAccel<2)
   {
     int hue = (ay>=0) ? green : blue;
     for (int i = 0; i < NUM_LEDS; i++)
@@ -544,7 +505,6 @@ void breakAlarm()
     if (value <= 50)
       up = true;
     delay(25);
-    touch = touchCheck();
     updateAcc();
   }
   breakConstrain = timerMax/6;
@@ -589,36 +549,15 @@ void drawNumbers(int number)
 bool isCharging()
 {
   int sensorValue = analogRead(CHARGE_PIN);
+  Serial.print(sensorValue);
+  Serial.print(", ");
   // Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 5V):
   float voltage = sensorValue * (5.0 / 1023.0);
+  Serial.println(voltage);
   // print out the value you read:
   //Serial.println(voltage);
   if (voltage > THRESHOLD_CHARGING)
     return true;
   else
     return false;
-}
-
-
-//checks all the touch keys and returns the touched key
-int touchCheck(){
-  // Get the currently touched pads
-  static uint16_t lasttouched = 0;
-  static uint16_t currtouched = 0;
-  currtouched = cap.touched();
-  
-  for (uint8_t i=0; i<12; i++) {
-    // it if *is* touched and *wasnt* touched before, alert!
-    if ((currtouched & _BV(i)) && !(lasttouched & _BV(i)) ) {
-      return i;
-    }
-//    // if it *was* touched and now *isnt*, alert!
-//    if (!(currtouched & _BV(i)) && (lasttouched & _BV(i)) ) {
-//      Serial.print(i); Serial.println(" released");
-//    }
-  }
-
-  // reset our state
-  lasttouched = currtouched;
-  return 0;
 }

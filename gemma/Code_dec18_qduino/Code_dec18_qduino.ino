@@ -41,8 +41,8 @@ int red = map(0, 0, 360, 0, 255);
 ADXL345 adxl; //variable adxl is an instance of the ADXL345 library
 
 //time stuff
-float scaleFactor = 1;
-unsigned long timerMax = scaleFactor * 60 * 60 * 1000L;
+float scaleFactor = 60;
+unsigned long timerMax = (60/scaleFactor)*60 * 1000L;
 long breakTimer = timerMax/2;
 long taskTimer = timerMax/3;
 int breakTimerMinutes;
@@ -329,7 +329,7 @@ void timerLoop()
     setLedColor(0, 6, taskTimer, 0, 0, taskHighlight, true);         //set task side to white
     setLedColor(6, 6, breakTimer, green, 255, breakHighlight, false); //set break side to green
   }
-  drawNumbers(breakTimer/(60000*scaleFactor));
+  drawNumbers(breakTimer/(60000/scaleFactor));
   delay(100);
 }
 
