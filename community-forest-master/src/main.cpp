@@ -4,10 +4,10 @@
 #include <WiFiClientSecure.h>
 
 #define MQTT_NAME "ForestMaster"
-#define MQTT_USERNAME "a0e78aaf"
-#define MQTT_PASSWORD "2626bb47aaf15e04"
+#define MQTT_USERNAME "sharing"
+#define MQTT_PASSWORD "caring"
 
-WiFiClientSecure net;
+WiFiClient net;
 MQTTClient client;
 void connect();
 void onMessage(String &topic, String &payload);
@@ -18,7 +18,7 @@ void sendLED(int module, double brightnessIncrease, double hueIncrease, double h
 void sendTotalHumidity();
 String splitString(String data, char separator, int index);
 
-int totalModules = 10;
+int totalModules = 26;
 unsigned long timer = 0;
 unsigned long hueTimer = 0;
 unsigned long hueInterval = 120000;
@@ -31,15 +31,18 @@ unsigned long humidityTimer = 0;
 unsigned long humidityInterval = 300000;
 
 int cycle = 600000; //10 minutes
-// cycle = 150000;
+// int cycle = 30000;
 unsigned int timerInterval() { return cycle / totalModules; }
+// unsigned int timerInterval() { return 6000; }
+// int changeTime() { return timerInterval(); }
+int changeTime() { return 6000; }
 
 void setup()
 {
   Serial.begin(115200);
   WiFi.begin("iot-net", "interactive");
 
-  client.begin("broker.shiftr.io", 8883, net);
+  client.begin("192.168.1.23", net);
   client.onMessage(onMessage);
   delay(2000);
   client.connect(MQTT_NAME, MQTT_USERNAME, MQTT_PASSWORD);
@@ -65,7 +68,6 @@ void loop()
   if (millis() - timer >= timerInterval())
   {
     timer = millis();
-    connect();
 
     currentModule++;
     if (currentModule >= totalModules)
@@ -94,25 +96,25 @@ void loop()
 
 void connect()
 {
-  if (WiFi.status() != WL_CONNECTED)
+  while (WiFi.status() != WL_CONNECTED)
   {
     // WiFi.begin(ssid, password);
-    Serial.println("No Wifi connection");
-  }
-  else if (!client.connected())
-  {
-    Serial.println("No mqtt connection");
+    Serial.println(".");
 
-    client.connect(MQTT_NAME, MQTT_USERNAME, MQTT_PASSWORD);
+    delay(500);
+  }
+  Serial.println("wifi connection succeeded");
+  while (!client.connect(MQTT_NAME, MQTT_USERNAME, MQTT_PASSWORD))
+  {
+    Serial.print(".");
     client.subscribe("/forest/time");
     client.subscribe("/forest/total");
     client.subscribe("/forest/humidity");
-
-    if (client.connected())
-    {
-      Serial.println("mqtt connected");
-    }
+    delay(500);
   }
+  Serial.println("mqtt connection succeeded");
+
+  delay(200);
 }
 
 double getNewHue(double current)
@@ -129,7 +131,7 @@ void setHue()
 
 void sendHue()
 {
-  Serial.println("sending " + String(map(currentHue, 0, 360, 0, 255)) + ' ' + "to forest/hue");
+  Serial.println("sending " + String(map(currentHue, 0, 360, 0, 255)) + ' ' + "to forest/color/h");
   client.publish("forest/color/h", String(currentHue));
 }
 
@@ -139,7 +141,7 @@ void sendLED(int module, double brightnessIncrease, double hueIncrease, double h
   msg += " ";
   msg += String(hue);
   msg += " ";
-  msg += String(timerInterval());
+  msg += String(changeTime());
   Serial.println("sending: " + msg + " to /forest/led");
   client.publish("/forest/led", msg);
 }

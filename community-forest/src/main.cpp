@@ -8,7 +8,7 @@ const int id = CONTROLLER_ID;
 const int leds = AMOUNT_LEDS;
 
 ForestController *controller;
-WiFiClientSecure net;
+WiFiClient net;
 
 MQTTClient client;
 void connect();
@@ -27,7 +27,7 @@ void setup()
     WiFi.begin(WIFI_SSID, WIFI_PASS);
     controller = new ForestController();
 
-    client.begin("broker.shiftr.io", 8883, net);
+    client.begin("192.168.1.23", net);
     client.onMessage(onMessage);
     delay(2000);
     client.connect(("Forest" + String(id)).c_str(), MQTT_USERNAME, MQTT_PASSWORD);
@@ -79,7 +79,7 @@ void connect()
         Serial.println("No mqtt connection");
 
         controller->setLED(leds, 255, 240);
-        client.connect(String(id).c_str(), MQTT_USERNAME, MQTT_PASSWORD);
+        client.connect(("Forest" + String(id)).c_str(), MQTT_USERNAME, MQTT_PASSWORD);
         client.subscribe("/forest/led");
         client.subscribe("/forest/moisture");
 
@@ -88,6 +88,7 @@ void connect()
             Serial.println("mqtt connected");
         }
     }
+    delay(200);
 }
 
 void onMessage(String &topic, String &payload)

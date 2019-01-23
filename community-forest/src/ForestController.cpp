@@ -45,7 +45,6 @@ int ForestController::getAmountOfLeds()
     if (amount > amountLeds)
         amount = amountLeds;
 
-    Serial.println("amount = " + String(amount));
     return amount;
 }
 
@@ -61,7 +60,6 @@ void ForestController::enableMoisture(bool enable)
 
 void ForestController::loop()
 {
-    // Serial.println(this->amountLeds);
     if (millis() - brightnessTimer >= brightnessInterval)
     {
         brightnessTimer = millis();

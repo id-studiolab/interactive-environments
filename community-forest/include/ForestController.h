@@ -2,8 +2,8 @@
 
 #include <FastLED.h>
 
-#define CONTROLLER_ID 9
-#define AMOUNT_LEDS 7
+#define CONTROLLER_ID 20
+#define AMOUNT_LEDS 11
 
 #ifndef FORESTCONTROLLER_H
 #define FORESTCONTROLLER_H
@@ -11,8 +11,8 @@
 #define WIFI_SSID "iot-net"
 #define WIFI_PASS "interactive"
 
-#define MQTT_USERNAME "a0e78aaf"
-#define MQTT_PASSWORD "2626bb47aaf15e04"
+#define MQTT_USERNAME "sharing"
+#define MQTT_PASSWORD "caring"
 
 #define CYCLE 150000
 
