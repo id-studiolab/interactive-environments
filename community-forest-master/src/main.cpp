@@ -24,17 +24,14 @@ unsigned long hueTimer = 0;
 unsigned long hueInterval = 120000;
 int currentModule = -1;
 int oldHue = 120.0;
-int currentHue = currentHue;
+int currentHue = 0;
 
-bool plantStates[30];
+bool plantStates[26];
 unsigned long humidityTimer = 0;
-unsigned long humidityInterval = 300000;
+unsigned long humidityInterval = 120000;
 
 int cycle = 600000; //10 minutes
-// int cycle = 30000;
 unsigned int timerInterval() { return cycle / totalModules; }
-// unsigned int timerInterval() { return 6000; }
-// int changeTime() { return timerInterval(); }
 int changeTime() { return 6000; }
 
 void setup()
@@ -132,7 +129,7 @@ void setHue()
 void sendHue()
 {
   Serial.println("sending " + String(map(currentHue, 0, 360, 0, 255)) + ' ' + "to forest/color/h");
-  client.publish("forest/color/h", String(currentHue));
+  client.publish("/forest/color/h", String(currentHue));
 }
 
 void sendLED(int module, double brightnessIncrease, double hueIncrease, double hue)
@@ -175,7 +172,8 @@ void sendTotalHumidity()
       total++;
   }
   int mapped = map(total, 0, totalModules, 0, 100);
-  client.publish("forest/totalHumidity", String(mapped));
+  Serial.println("sending total Humidity" + String(mapped));
+  client.publish("/forest/totalHumidity", String(mapped));
 }
 
 String splitString(String data, char separator, int index)
