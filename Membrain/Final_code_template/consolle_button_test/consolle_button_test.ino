@@ -17,6 +17,8 @@ Adafruit_NeoPixel pixels_forest = Adafruit_NeoPixel(ledNumbers[1], ledPins [1], 
 Adafruit_NeoPixel pixels_climate = Adafruit_NeoPixel(ledNumbers[2], ledPins [2], NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel pixels_playback = Adafruit_NeoPixel(ledNumbers[3], ledPins [3], NEO_GRB + NEO_KHZ800);
 
+Adafruit_NeoPixel pixels_whiteStrip = Adafruit_NeoPixel(70, A4, NEO_GRB + NEO_KHZ800);
+
 
 unsigned long lastActivityCheck = 0;
 unsigned long lastSent = 0;
@@ -36,6 +38,8 @@ void setup() {
   pixels_forest.begin();
   pixels_climate.begin();
   pixels_playback.begin();
+  pixels_whiteStrip.begin();
+  turnOnLedBar();
 
 }
 
@@ -48,18 +52,18 @@ void loop() {
 
 void readButtons() {
   for (int i = 0; i < 4; i++) {
-    int buttonState=digitalRead(buttonPins[i]);
-    int lastButtonState=lastButtonStates[i];
-    
+    int buttonState = digitalRead(buttonPins[i]);
+    int lastButtonState = lastButtonStates[i];
+
     if (buttonState && !lastButtonState) {
       activeMode = i;
-//      Serial.print("mode ");
-//      Serial.print( activeMode);
-//      Serial.println(" active");
+      //      Serial.print("mode ");
+      //      Serial.print( activeMode);
+      //      Serial.println(" active");
 
       Serial.println(activeMode);
     }
-    lastButtonStates[i]=buttonState;
+    lastButtonStates[i] = buttonState;
 
   }
 }
@@ -105,6 +109,13 @@ void setledStripColor(int ledStripIndex, int r, int g, int b) {
 
       break;
   }
+}
+
+void turnOnLedBar() {
+  for (int i = 0; i < 70; i++) {
+    pixels_whiteStrip.setPixelColor(i, pixels_whiteStrip.Color(100, 100, 100));
+  }
+  pixels_whiteStrip.show();
 }
 
 
