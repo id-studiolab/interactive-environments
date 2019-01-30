@@ -2,9 +2,11 @@
 #include <ESP8266WiFi.h>
 #include <MQTT.h>
 
+// ssid & password for WiFi
 const char ssid[] = "iot-net";
 const char pass[] = "interactive";
 
+// Initialize SoftwareSerial for receiving from UNO board
 SoftwareSerial mySerial(5, 6);
 
 WiFiClient net;
@@ -19,8 +21,9 @@ void connect() {
     delay(1000);
   }
 
+  // Log in to MQTT Broker
   Serial.print("\nconnecting...");
-  while (!client.connect("CoZone-Data", "a0e78aaf", "2626bb47aaf15e04")) {
+  while (!client.connect("CoZone-Data", "sharing", "caring")) {
     Serial.print(".");
     delay(1000);
   }
@@ -33,12 +36,15 @@ void setup() {
   mySerial.begin(9600);
   WiFi.begin(ssid, pass);
 
-  client.begin("broker.shiftr.io", net);
+  // Connect to broker website
+  client.begin("192.168.1.23", net);
 
   connect();
   delay(1000);
 }
 
+// Parsing function that splits string data on the separator
+// Returns the index-th separated string.
 String getValue(String data, char separator, int index) {
   int found = 0;
   int strIndex[] = {0, -1};
@@ -64,19 +70,23 @@ void loop() {
   }
   
   if (mySerial.available()) {
+    // Read incoming data from UNO board
     String data = mySerial.readString();
     String dataTemp = getValue(data, '\n', 0);
     String dataHumi = getValue(data, '\n', 1);
     String dataCarb = getValue(data, '\n', 2);
 
+    // Remove unnecessary data
     dataTemp.remove(4);
     dataHumi.remove(4);
     dataCarb.remove(4);
 
+    // If the CO2 data has < 999 PPM it'll still have the C, thus remove it
     if (dataCarb.endsWith("C")) {
       dataCarb.remove(3);
     }
 
+    // Publish data to MQTT service
     client.publish("/cozone/temperature", dataTemp);
     client.publish("/cozone/humidity", dataHumi);
     client.publish("/cozone/co2", dataCarb);
