@@ -12,21 +12,27 @@ WiFiClient net;
 WiFiClient client;
 HTTPClient http;
 
+// API Website and key
 char server[] = "api.openweathermap.org";
 String apiKey = "128e47add9cff5fc178fa1011767c49b";
-//the city you want the weather for
+// The city you want the weather for
 String location = "Amsterdam,NL";
 int status = WL_IDLE_STATUS;
 
+// Buffer for HTTP GET request
 StaticJsonBuffer<8192> jsonBuffer;
 int countdown = 0;
 
-const char ssid[] = "Science-Centre-EVENT";
-const char pass[] = "ScienceCentre";
+// ssid & password for WiFi
+const char ssid[] = "iot-net";
+const char pass[] = "interactive";
 
+// Pin and # of pixels on LED-Strip
 #define PIN            2
 #define NUMPIXELS      8
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
+
+// Initialize LED-Rings (only 15/16 LEDs are used)
 Adafruit_NeoPixel outsidetemp = Adafruit_NeoPixel(15, D2, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel humidity = Adafruit_NeoPixel(15, D5, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel windspeed = Adafruit_NeoPixel(15, D1, NEO_GRB + NEO_KHZ800);
@@ -45,6 +51,7 @@ void connect() {
 
 void getWeather() {
   Serial.println("\nStarting connection to server...");
+  // Send HTTP GET request on server connect
   if (client.connect(server, 80)) {
     Serial.println("connected to server\n");
     client.print("GET /data/2.5/forecast?");
@@ -59,30 +66,35 @@ void getWeather() {
     Serial.println("unable to connect");
   }
   delay(1000);
+  
+  // Register reply
   String line = "";
   while (client.connected()) {
     line = client.readStringUntil('\n');
   }
   client.flush();
   client.stop();
+  
+  // Parse reply
   JsonObject& root = jsonBuffer.parseObject(line);
   if (!root.success()) {
     Serial.println("parseObject() failed");
     return;
   }
+  
+  // Get data from JSON Object
   int weather_id = root["list"][0]["weather"][0]["id"];
   float temp = root["list"][0]["main"]["temp"];
   float wind = root["list"][0]["wind"]["speed"];
   int humidityv = root["list"][0]["main"]["humidity"];
 
-  Serial.println("Wind speed: " + String(wind) + " m/s");
-  Serial.println("Temp out: " + String(temp) + " degrees");
-  Serial.println("Humidity out: " + String(humidityv) + "%");
-
+  // Set all LEDs initially to be off
   for (int i = 0; i < NUMPIXELS; i++) {
     pixels.setPixelColor(i, 0, 0, 0);
   }
 
+  // Weather IDs correspond to different weather types:
+  // https://openweathermap.org/weather-conditions
   if (weather_id >= 200 and weather_id < 300) {
     // Thunderstorm
     pixels.setPixelColor(4, 255, 255, 255);
@@ -103,14 +115,19 @@ void getWeather() {
     pixels.setPixelColor(1, 255, 255, 255);
   }
 
+  // Set all LED-Rings initially to be off
   for (int i = 0; i < 15; i++) {
     outsidetemp.setPixelColor(15-i, 0, 0, 0);
     windspeed.setPixelColor(15-i, 0, 0, 0);
     humidity.setPixelColor(15-i, 0, 0, 0);
   }
+  
+  // Map the API data to # of LEDs
   int temp_a = map(temp, 0, 30, 1, 15);
   int wind_a = map(wind, 0, 25, 1, 15);
   int humid_a = map(humidityv, 0, 100, 1, 15);
+  
+  // Display data
   for (int i = 0; i < temp_a; i++) {
     outsidetemp.setPixelColor(15-i, 15, 15, 15);
   }

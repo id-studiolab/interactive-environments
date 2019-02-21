@@ -10,12 +10,14 @@
 #define HUMIDPIN 9
 #define DHTTYPE DHT22
 
+// Initialize LED Rings
 Adafruit_NeoPixel tempring = Adafruit_NeoPixel(NUMPIXELS, 6, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel humidring = Adafruit_NeoPixel(NUMPIXELS, 5, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel co2ring = Adafruit_NeoPixel(NUMPIXELS, 4, NEO_GRB + NEO_KHZ800);
+
+// Initialize CO2, Temperature and Humidity Sensors
 SoftwareSerial s_serial(2, 3);
 DHT humiditySensor(HUMIDPIN, DHTTYPE);
-
 const unsigned char cmd_get_sensor[] = {
   0xff, 0x01, 0x86, 0x00, 0x00,
   0x00, 0x00, 0x00, 0x79
@@ -38,14 +40,18 @@ void setup() {
 }
 
 void loop() {
+  // Read humidity and temperature from sensors
   float humidity = humiditySensor.readHumidity();
   float temperature = humiditySensor.readTemperature();
 
+  // Read CO2 from sensor
   dataRecieve();
 
+  // Map humidity and temperature values to # of LEDs
   int tempamount = map(temperature, 15, 25, 1, 15);
   int humidamount = map(humidity, 0, 100, 1, 15);
   
+  // Map CO2 PPM to # of LEDs
   int co2amount = 1;
   if (CO2PPM <= 1200) {
     co2amount = map(CO2PPM, 200, 1200, 1, 15);
@@ -53,12 +59,14 @@ void loop() {
     co2amount = 15;
   }
 
+  // Initially turn all LEDs off
   for (int i = 0; i < NUMPIXELS; i++) {
     tempring.setPixelColor(i, 0, 0, 0);
     humidring.setPixelColor(i, 0, 0, 0);
     co2ring.setPixelColor(i, 0, 0, 0);
   }
 
+  // Display data
   for (int i = 0; i < tempamount; i++) {
     tempring.setPixelColor(15-i, 15, 15, 15);
   }
@@ -72,6 +80,7 @@ void loop() {
   humidring.show();
   co2ring.show();
 
+  // Send data to the attached WeMoS board to publish to MQTT
   Serial.println(String(temperature) + "T");
   Serial.println(String(humidity) + "H");
   Serial.println(String(CO2PPM) + "C");
@@ -79,6 +88,7 @@ void loop() {
   delay(interval);
 }
 
+// Function provided by the CO2 Sensor library to read its data
 bool dataRecieve(void) {
   byte data[9];
   int i = 0;

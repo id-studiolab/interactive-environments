@@ -2,9 +2,11 @@
 #include <ESP8266WiFi.h>
 #include <MQTT.h>
 
+// ssid & password for WiFi
 const char ssid[] = "iot-net";
 const char pass[] = "interactive";
 
+// Initialize SoftwareSerial for receiving from UNO board
 SoftwareSerial mySerial(5, 4);
 
 WiFiClient net;
@@ -17,10 +19,11 @@ void connect() {
     delay(1000);
   }
 
+  // Log in to MQTT Broker
   Serial.print("\nconnecting...");
-  if (!client.connect("CoZone-Data2", "a0e78aaf", "2626bb47aaf15e04")) {
-    delay(3000);
-    return;
+  while (!client.connect("CoZone-Data", "sharing", "caring")) {
+    Serial.print(".");
+    delay(1000);
   }
 
   Serial.println("\nconnected!");
@@ -31,7 +34,8 @@ void setup() {
   mySerial.begin(9600);
   WiFi.begin(ssid, pass);
 
-  client.begin("broker.shiftr.io", net);
+  // Connect to broker website
+  client.begin("192.168.1.23", net);
 
   connect();
   delay(1000);
@@ -50,8 +54,10 @@ void loop() {
   }
   
   if (mySerial.available()) {
+    // Read incoming data from UNO board
     char c = mySerial.read();
     if (c == '\n' or c == '\r') {
+      // Send data to the MQTT service every other second
       if (millis() - cur > 1000) {
         client.publish("/cozone/busyness", String(temp));
         cur = millis();
