@@ -10,7 +10,7 @@
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ 1021.0, 200.0, 1000.0, 860.0 ],
+		"rect" : [ 85.0, 79.0, 797.0, 787.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 0,
 		"default_fontsize" : 12.0,
@@ -59,8 +59,7 @@
 					"maxclass" : "comment",
 					"numinlets" : 1,
 					"numoutlets" : 0,
-					"patching_rect" : [ 96.0, 342.0, 122.0, 34.0 ],
-					"presentation_linecount" : 2,
+					"patching_rect" : [ 96.0, 342.0, 122.0, 33.0 ],
 					"text" : "multiply to [0, 255] arduino output range"
 				}
 
@@ -112,7 +111,6 @@
 					"numinlets" : 1,
 					"numoutlets" : 0,
 					"patching_rect" : [ 547.5, 494.0, 118.0, 20.0 ],
-					"presentation_linecount" : 3,
 					"text" : "output timed bangs"
 				}
 
@@ -151,7 +149,6 @@
 					"numinlets" : 1,
 					"numoutlets" : 0,
 					"patching_rect" : [ 309.5, 617.0, 270.0, 20.0 ],
-					"presentation_linecount" : 5,
 					"text" : "output combined list when either value changes"
 				}
 
@@ -215,7 +212,6 @@
 					"numinlets" : 1,
 					"numoutlets" : 0,
 					"patching_rect" : [ 578.0, 459.0, 97.0, 20.0 ],
-					"presentation_linecount" : 2,
 					"text" : "toggle rate (ms)"
 				}
 
@@ -229,7 +225,6 @@
 					"numinlets" : 1,
 					"numoutlets" : 0,
 					"patching_rect" : [ 425.0, 220.0, 209.0, 20.0 ],
-					"presentation_linecount" : 6,
 					"text" : "modulation: sets toggle frequency"
 				}
 
@@ -243,7 +238,6 @@
 					"numinlets" : 1,
 					"numoutlets" : 0,
 					"patching_rect" : [ 61.5, 227.0, 199.0, 20.0 ],
-					"presentation_linecount" : 2,
 					"text" : "tone: sets buzzer tone frequency"
 				}
 
@@ -294,7 +288,7 @@
 					"maxclass" : "comment",
 					"numinlets" : 1,
 					"numoutlets" : 0,
-					"patching_rect" : [ 148.0, 780.0, 154.0, 34.0 ],
+					"patching_rect" : [ 148.0, 780.0, 154.0, 33.0 ],
 					"text" : "actuator value [0, 255] to talkToArduino patch "
 				}
 
@@ -494,7 +488,7 @@
 					"maxclass" : "comment",
 					"numinlets" : 1,
 					"numoutlets" : 0,
-					"patching_rect" : [ 16.0, 22.0, 149.0, 34.0 ],
+					"patching_rect" : [ 16.0, 22.0, 149.0, 33.0 ],
 					"text" : "3. OUTPUT"
 				}
 
@@ -687,8 +681,8 @@
 		"styles" : [ 			{
 				"name" : "Headlines",
 				"default" : 				{
-					"fontsize" : [ 14.0 ],
-					"fontface" : [ 1 ]
+					"fontface" : [ 1 ],
+					"fontsize" : [ 14.0 ]
 				}
 ,
 				"parentstyle" : "",
@@ -697,8 +691,8 @@
 , 			{
 				"name" : "Section_Headline",
 				"default" : 				{
-					"fontsize" : [ 14.0 ],
-					"fontface" : [ 0 ]
+					"fontface" : [ 0 ],
+					"fontsize" : [ 14.0 ]
 				}
 ,
 				"parentstyle" : "",
@@ -717,10 +711,10 @@
 , 			{
 				"name" : "dangerous_patches",
 				"default" : 				{
-					"fontsize" : [ 12.0 ],
+					"fontname" : [ "Arial" ],
 					"bgcolor" : [ 0.258824, 0.105882, 0.333333, 1.0 ],
-					"accentcolor" : [ 1.0, 0.219608, 0.4, 1.0 ],
-					"fontname" : [ "Arial" ]
+					"fontsize" : [ 12.0 ],
+					"accentcolor" : [ 1.0, 0.219608, 0.4, 1.0 ]
 				}
 ,
 				"parentstyle" : "",
@@ -743,9 +737,9 @@
 , 			{
 				"name" : "jpatcher001",
 				"default" : 				{
+					"fontname" : [ "Arial" ],
 					"fontsize" : [ 12.0 ],
-					"accentcolor" : [ 0.490196, 0.498039, 0.517647, 1.0 ],
-					"fontname" : [ "Arial" ]
+					"accentcolor" : [ 0.490196, 0.498039, 0.517647, 1.0 ]
 				}
 ,
 				"parentstyle" : "",
@@ -759,9 +753,9 @@
 , 			{
 				"name" : "white on black",
 				"default" : 				{
-					"fontsize" : [ 14.0 ],
 					"fontface" : [ 0 ],
-					"textcolor" : [ 1.0, 1.0, 1.0, 1.0 ]
+					"textcolor" : [ 1.0, 1.0, 1.0, 1.0 ],
+					"fontsize" : [ 14.0 ]
 				}
 ,
 				"parentstyle" : "",
